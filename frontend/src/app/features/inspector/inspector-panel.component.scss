@@ -68,14 +68,14 @@
 .tag{padding:2px 7px;border-radius:20px;font-size:8px;background:#0e1830;border:1px solid #2a5070;color:#b0c6dc}
 
 /* ── Flow search bar ────────────────────────────────────────────────────── */
-.fsearch{margin-bottom:8px}
-.fbox{display:flex;align-items:center;gap:5px;background:#0c1626;border:1px solid #2a5070;border-radius:6px;padding:5px 8px;transition:border-color .15s}
-.fbox:focus-within{border-color:#3b82f6}
-.fi{font-size:10px;color:#4e7a9e;flex-shrink:0;line-height:1}
-.finput{flex:1;background:transparent;border:none;outline:none;font-size:9px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
-.finput::placeholder{color:#4e7a9e}
-.fclear{background:none;border:none;color:#4e7a9e;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;transition:color .12s}
-.fclear:hover{color:#d2e4f6}
+.fsearch{margin-bottom:10px}
+.fbox{display:flex;align-items:center;gap:6px;background:#0d1f38;border:1px solid #3b6ea8;border-radius:7px;padding:7px 10px;min-height:32px;transition:border-color .15s,box-shadow .15s}
+.fbox:focus-within{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.15)}
+.fi{font-size:11px;color:#60a5fa;flex-shrink:0;line-height:1}
+.finput{flex:1;background:transparent;border:none;outline:none;font-size:9.5px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
+.finput::placeholder{color:#6090b8}
+.fclear{background:none;border:none;color:#6090b8;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0;transition:color .12s}
+.fclear:hover{color:#e2ecf8}
 .fs-ct{margin-left:4px;font-size:7px;padding:1px 5px;border-radius:8px;background:#1a3050;color:#60a5fa;letter-spacing:0}
 
 /* ── Flow rows ──────────────────────────────────────────────────────────── */
