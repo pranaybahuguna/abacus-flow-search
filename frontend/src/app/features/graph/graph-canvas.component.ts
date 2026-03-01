@@ -46,9 +46,9 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const W = el.clientWidth  || 900;
     const H = el.clientHeight || 560;
 
-    // Clone data — D3 mutates nodes with x/y
+    // Clone data — D3 mutates nodes with x/y — wider initial scatter = less initial overlap
     const nodes: SimNode[] = sg.nodes.map(n => ({
-      ...n, x: W/2 + (Math.random()-.5)*200, y: H/2 + (Math.random()-.5)*200,
+      ...n, x: W/2 + (Math.random()-.5)*480, y: H/2 + (Math.random()-.5)*480,
       vx:0, vy:0, fx:null, fy:null,
     }));
     const byId = new Map(nodes.map(n => [n.id, n]));
@@ -61,9 +61,9 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const defs = svg.append('defs');
     Object.entries(CRIT_STROKE).forEach(([crit, stroke]) => {
       defs.append('marker').attr('id',`arr-${crit}`)
-        .attr('viewBox','0 -5 10 10').attr('refX',30).attr('refY',0)
-        .attr('markerWidth',5).attr('markerHeight',5).attr('orient','auto')
-        .append('path').attr('d','M0,-5L10,0L0,5').attr('fill', stroke);
+        .attr('viewBox','0 -6 12 12').attr('refX',10).attr('refY',0)
+        .attr('markerWidth',9).attr('markerHeight',9).attr('orient','auto')
+        .append('path').attr('d','M0,-6L12,0L0,6').attr('fill', stroke);
     });
     const gf = defs.append('filter').attr('id','glow')
       .attr('x','-40%').attr('y','-40%').attr('width','180%').attr('height','180%');
@@ -93,14 +93,15 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .on('zoom', e => g.attr('transform', e.transform as unknown as string)));
     svg.on('click', () => this.gs.clearSelection());
 
-    // Simulation
+    // Simulation — longer links + stronger repulsion = well-spread layout
     this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
-      .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(180).strength(.5))
-      .force('charge',  d3.forceManyBody<SimNode>().strength(-700))
+      .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(270).strength(.38))
+      .force('charge',  d3.forceManyBody<SimNode>().strength(-1600))
       .force('center',  d3.forceCenter(W/2, H/2))
-      .force('collide', d3.forceCollide<SimNode>(75));
+      .force('collide', d3.forceCollide<SimNode>(115))
+      .alphaDecay(0.013);  // slower decay → more time to reach spread equilibrium
 
-    const NW=140, NH=50;
+    const NW=152, NH=56;
 
     // Edges
     const eG  = g.append('g');
@@ -121,10 +122,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .attr('opacity', .78);
     eSel.append('rect').attr('rx',3).attr('fill','#030810').attr('opacity',.9);
     eSel.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle')
-      .attr('font-size','8.5px').attr('font-family','IBM Plex Mono,monospace')
+      .attr('font-size','9.5px').attr('font-family','IBM Plex Mono,monospace')
       .attr('pointer-events','none')
       .attr('fill', d => CRIT_STROKE[d.criticality] ?? '#6b7280')
-      .text(d => d.data_entity.length>22 ? d.data_entity.slice(0,21)+'…' : d.data_entity);
+      .text(d => d.data_entity.length>30 ? d.data_entity.slice(0,29)+'…' : d.data_entity);
 
     // Nodes
     const nG  = g.append('g');
@@ -143,29 +144,54 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     nSel.append('rect')
       .attr('x',-NW/2).attr('y',-NH/2).attr('width',4).attr('height',NH).attr('rx',3)
       .attr('fill', d => ds(d.domain).accent);
-    nSel.append('text').attr('y',-7).attr('text-anchor','middle')
-      .attr('font-size','12px').attr('font-weight','600')
+    nSel.append('text').attr('y',-8).attr('text-anchor','middle')
+      .attr('font-size','13px').attr('font-weight','600')
       .attr('font-family','IBM Plex Sans,sans-serif')
       .attr('fill', d => ds(d.domain).text).text(d => d.name);
-    nSel.append('text').attr('y',10).attr('text-anchor','middle')
-      .attr('font-size','8px').attr('font-family','IBM Plex Mono,monospace')
+    nSel.append('text').attr('y',11).attr('text-anchor','middle')
+      .attr('font-size','9px').attr('font-family','IBM Plex Mono,monospace')
       .attr('fill', d => ds(d.domain).accent).text(d => d.domain.toUpperCase());
 
-    // Tick
+    // Tick — clip edge paths to node rectangle boundaries so arrows land at node edges
+    // rectEdgeDist: distance from node center to rectangle boundary in direction (nx,ny)
+    const rectEdgeDist = (nx: number, ny: number, w: number, h: number) =>
+      Math.min(
+        Math.abs(nx) > 1e-9 ? (w/2) / Math.abs(nx) : Infinity,
+        Math.abs(ny) > 1e-9 ? (h/2) / Math.abs(ny) : Infinity,
+      );
+
     this.sim.on('tick', () => {
       eSel.each(function(d) {
         const s = d.source as SimNode, t = d.target as SimNode;
-        const mx=(s.x!+t.x!)/2, my=(s.y!+t.y!)/2;
-        const ox=(t.y!-s.y!)*.22, oy=(t.x!-s.x!)*.22;
+        const dx = t.x! - s.x!, dy = t.y! - s.y!;
+        const len = Math.sqrt(dx*dx + dy*dy) || 1;
+        const nx = dx/len, ny = dy/len;
+
+        // Clip start/end to node edge + 5px gap
+        const gap = 5;
+        const sOff = rectEdgeDist(nx, ny, NW + gap*2, NH + gap*2);
+        const tOff = rectEdgeDist(nx, ny, NW + gap*2, NH + gap*2);
+
+        // Guard: if nodes are too close the clipped path would cross — fall back to center points
+        const sx = len > sOff + tOff ? s.x! + nx * sOff : s.x!;
+        const sy = len > sOff + tOff ? s.y! + ny * sOff : s.y!;
+        const ex = len > sOff + tOff ? t.x! - nx * tOff : t.x!;
+        const ey = len > sOff + tOff ? t.y! - ny * tOff : t.y!;
+
+        // Bezier control: perpendicular offset (gentler curve = 0.16)
+        const mx=(sx+ex)/2, my=(sy+ey)/2;
+        const ox=(ey-sy)*.16, oy=(ex-sx)*.16;
+
         d3.select(this).select<SVGPathElement>('path')
-          .attr('d',`M${s.x},${s.y} Q${mx+ox},${my-oy} ${t.x},${t.y}`);
-        const lx=mx+ox*.4, ly=my-oy*.4;
+          .attr('d',`M${sx},${sy} Q${mx+ox},${my-oy} ${ex},${ey}`);
+
+        const lx=mx+ox*.35, ly=my-oy*.35;
         const txt = d3.select(this).select<SVGTextElement>('text').attr('x',lx).attr('y',ly);
         try {
           const bb = txt.node()!.getBBox();
           d3.select(this).select<SVGRectElement>('rect')
-            .attr('x',bb.x-4).attr('y',bb.y-2)
-            .attr('width',bb.width+8).attr('height',bb.height+4);
+            .attr('x',bb.x-5).attr('y',bb.y-3)
+            .attr('width',bb.width+10).attr('height',bb.height+6);
         } catch(_) {}
       });
       nSel.attr('transform', d => `translate(${d.x},${d.y})`);
