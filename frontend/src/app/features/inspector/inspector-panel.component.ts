@@ -40,18 +40,41 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   ds(domain: string)   { return ds(domain); }
   cs(crit:  string)    { return CRIT_STROKE[crit] ?? '#6b7280'; }
 
-  /** Flows from subgraph where target === nodeId */
-  inbound(sg: SubgraphResponse, nodeId: string) {
-    return sg.edges.filter(e => e.target === nodeId);
+  // ── Grouped flow helpers ─────────────────────────────────────────────────
+  // Groups multiple flows between the same system pair into a single card
+  // showing the top criticality + a count badge when >1 flow exists.
+
+  private _groupFlows(
+    edges: SubgraphResponse['edges'],
+    sysKey: 'source' | 'target',
+    sg: SubgraphResponse,
+  ) {
+    const W: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+    const map = new Map<string, { sysId: string; sysName: string; topCrit: string; flows: typeof edges }>();
+    edges.forEach(f => {
+      const sysId = f[sysKey];
+      if (!map.has(sysId)) {
+        map.set(sysId, {
+          sysId,
+          sysName: sg.nodes.find(n => n.id === sysId)?.name ?? sysId,
+          topCrit: f.criticality,
+          flows: [],
+        });
+      }
+      const grp = map.get(sysId)!;
+      grp.flows.push(f);
+      if ((W[f.criticality] ?? 0) > (W[grp.topCrit] ?? 0)) grp.topCrit = f.criticality;
+    });
+    return Array.from(map.values());
   }
 
-  /** Flows from subgraph where source === nodeId */
-  outbound(sg: SubgraphResponse, nodeId: string) {
-    return sg.edges.filter(e => e.source === nodeId);
+  /** Unique upstream systems — each with aggregated top criticality + all flows */
+  inboundGrouped(sg: SubgraphResponse, nodeId: string) {
+    return this._groupFlows(sg.edges.filter(e => e.target === nodeId), 'source', sg);
   }
 
-  /** Resolve system name from subgraph nodes */
-  sysName(sg: SubgraphResponse, id: string): string {
-    return sg.nodes.find(n => n.id === id)?.name ?? id;
+  /** Unique downstream systems — each with aggregated top criticality + all flows */
+  outboundGrouped(sg: SubgraphResponse, nodeId: string) {
+    return this._groupFlows(sg.edges.filter(e => e.source === nodeId), 'target', sg);
   }
 }

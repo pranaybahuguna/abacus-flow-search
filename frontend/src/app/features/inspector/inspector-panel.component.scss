@@ -73,6 +73,15 @@
 .fp{font-size:9px;color:#d2e4f6;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fc{font-size:7.5px;flex-shrink:0}
 
+/* ── Flow group cards (grouped by system) ───────────────────────────────── */
+.fg{margin-bottom:5px;border-radius:5px;background:#0c1626;border:1px solid #264e72;overflow:hidden}
+.fg-row{display:flex;align-items:center;gap:6px;padding:5px 7px}
+.fg-count{font-size:7px;padding:2px 7px;border-radius:10px;background:#1a3050;border:1px solid #2a5a82;color:#60a5fa;flex-shrink:0;white-space:nowrap}
+.fg-flows{padding:3px 8px 6px 14px;display:flex;flex-direction:column;gap:3px;border-top:1px solid #1a3050}
+.fg-flow{font-size:8px;color:#b0c6dc;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fg-dot{font-size:7px;flex-shrink:0}
+.empty-flows{font-size:8.5px;color:#60a5fa;padding:3px 0 6px;opacity:.6}
+
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
 .sys{padding:8px 10px;border-radius:7px;border:1px solid;margin-bottom:4px}
 .sr{font-size:7.5px;letter-spacing:.1em;margin-bottom:4px}

@@ -42,20 +42,41 @@
         <span *ngFor="let t of node.tags" class="tag">{{t}}</span>
       </div>
 
-      <!-- Flows from current subgraph -->
+      <!-- Flows from current subgraph — grouped by system -->
       <ng-container *ngIf="subgraph$ | async as sg">
         <div class="div"></div>
-        <div class="sl">UPSTREAM SYSTEMS ({{inbound(sg, node.id).length}})</div>
-        <div *ngFor="let f of inbound(sg, node.id)" class="fr">
-          <div class="fd" [style.background]="cs(f.criticality)"></div>
-          <span class="fp">{{sysName(sg, f.source)}}</span>
-          <span class="fc" [style.color]="cs(f.criticality)">{{f.criticality}}</span>
+        <div class="sl">UPSTREAM SYSTEMS ({{inboundGrouped(sg, node.id).length}})</div>
+        <div class="empty-flows" *ngIf="inboundGrouped(sg, node.id).length === 0">no upstream</div>
+        <div *ngFor="let grp of inboundGrouped(sg, node.id)" class="fg">
+          <div class="fg-row">
+            <div class="fd" [style.background]="cs(grp.topCrit)"></div>
+            <span class="fp">{{grp.sysName}}</span>
+            <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
+            <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
+          </div>
+          <div *ngIf="grp.flows.length > 1" class="fg-flows">
+            <div *ngFor="let f of grp.flows" class="fg-flow">
+              <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
+              {{f.data_entity}}
+            </div>
+          </div>
         </div>
-        <div class="sl mt">DOWNSTREAM SYSTEMS ({{outbound(sg, node.id).length}})</div>
-        <div *ngFor="let f of outbound(sg, node.id)" class="fr">
-          <div class="fd" [style.background]="cs(f.criticality)"></div>
-          <span class="fp">{{sysName(sg, f.target)}}</span>
-          <span class="fc" [style.color]="cs(f.criticality)">{{f.criticality}}</span>
+
+        <div class="sl mt">DOWNSTREAM SYSTEMS ({{outboundGrouped(sg, node.id).length}})</div>
+        <div class="empty-flows" *ngIf="outboundGrouped(sg, node.id).length === 0">no downstream</div>
+        <div *ngFor="let grp of outboundGrouped(sg, node.id)" class="fg">
+          <div class="fg-row">
+            <div class="fd" [style.background]="cs(grp.topCrit)"></div>
+            <span class="fp">{{grp.sysName}}</span>
+            <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
+            <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
+          </div>
+          <div *ngIf="grp.flows.length > 1" class="fg-flows">
+            <div *ngFor="let f of grp.flows" class="fg-flow">
+              <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
+              {{f.data_entity}}
+            </div>
+          </div>
         </div>
       </ng-container>
     }

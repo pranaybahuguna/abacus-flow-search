@@ -57,6 +57,25 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .filter(e => e.source && e.target);
     this._edges = edges;
 
+    // Parallel edge fan-out: edges between the same source→target pair get
+    // different perpendicular bezier offsets so each flow draws a distinct arc.
+    // Single edges keep the base 0.16 curve; parallel edges spread ±0.22 per step.
+    const pairCount = new Map<string, number>();
+    edges.forEach(e => {
+      const key = `${(e.source as SimNode).id}→${(e.target as SimNode).id}`;
+      pairCount.set(key, (pairCount.get(key) ?? 0) + 1);
+    });
+    const pairCur = new Map<string, number>();
+    const edgeFactor = new Map<string, number>();
+    edges.forEach(e => {
+      const key = `${(e.source as SimNode).id}→${(e.target as SimNode).id}`;
+      const n = pairCount.get(key)!;
+      const i = pairCur.get(key) ?? 0;
+      pairCur.set(key, i + 1);
+      // n=1 → standard gentle arc; n>1 → spread symmetrically around 0
+      edgeFactor.set(e.id, n === 1 ? 0.16 : (i - (n - 1) / 2) * 0.22);
+    });
+
     // Defs: arrowheads per criticality + glow filter
     const defs = svg.append('defs');
     Object.entries(CRIT_STROKE).forEach(([crit, stroke]) => {
@@ -178,9 +197,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         const ex = len > sOff + tOff ? t.x! - nx * tOff : t.x!;
         const ey = len > sOff + tOff ? t.y! - ny * tOff : t.y!;
 
-        // Bezier control: perpendicular offset (gentler curve = 0.16)
+        // Bezier control: perpendicular offset per edge (parallel edges fan out)
+        const f = edgeFactor.get(d.id) ?? 0.16;
         const mx=(sx+ex)/2, my=(sy+ey)/2;
-        const ox=(ey-sy)*.16, oy=(ex-sx)*.16;
+        const ox=(ey-sy)*f, oy=(ex-sx)*f;
 
         d3.select(this).select<SVGPathElement>('path')
           .attr('d',`M${sx},${sy} Q${mx+ox},${my-oy} ${ex},${ey}`);
