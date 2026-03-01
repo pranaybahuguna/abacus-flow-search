@@ -22,11 +22,12 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   private destroy = new Subject<void>();
   private typed$  = new Subject<string>();
 
-  query    = signal('');
-  response = signal<SearchResponse|null>(null);
-  loading  = signal(false);
-  activeId = signal<string|null>(null);
-  examples = EXAMPLES;
+  query          = signal('');
+  response       = signal<SearchResponse|null>(null);
+  loading        = signal(false);
+  activeId       = signal<string|null>(null);
+  tierDismissed  = signal(false);
+  examples       = EXAMPLES;
 
   TIER = {
     HIGH:   {color:'#22c55e', bg:'rgba(5,46,22,.85)',  icon:'✓', label:'AUTO-RESOLVED'  },
@@ -49,10 +50,13 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   useExample(ex:string)  { this.query.set(ex); this._run(ex); }
 
   private _run(q:string) {
+    this.tierDismissed.set(false);   // show badge fresh on every new search
     this.ss.search(q).subscribe(res => {
       if (res.tier==='HIGH' && res.resolved) this.pick(res.resolved);
     });
   }
+
+  dismissTier() { this.tierDismissed.set(true); }
 
   pick(c:SearchCandidate) {
     this.activeId.set(c.entity_id);

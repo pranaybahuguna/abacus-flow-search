@@ -19,18 +19,14 @@
     </div>
   </div>
 
-  <!-- Confidence tier -->
-  <div class="sect" *ngIf="tc() as t">
-    <div class="tier" [style.background]="t.bg" [style.border-color]="t.color+'30'">
-      <div class="tier-i" [style.color]="t.color" [style.border-color]="t.color">{{t.icon}}</div>
-      <div>
-        <div class="tier-l" [style.color]="t.color">{{t.label}}</div>
-        <div class="tier-s">
-          @switch(tier()){@case('HIGH'){Auto-resolved & rendered}@case('MEDIUM'){Select below}@default{Rephrase query}}
-        </div>
-      </div>
-    </div>
-    <div class="tier-m" *ngIf="response()?.message">{{response()!.message}}</div>
+  <!-- Confidence badge — compact, dismissible -->
+  <div class="tier-badge" *ngIf="tc() && !tierDismissed()"
+       [style.border-left-color]="tc()!.color">
+    <span class="tb-icon" [style.color]="tc()!.color">{{tc()!.icon}}</span>
+    <span class="tb-label" [style.color]="tc()!.color">{{tc()!.label}}</span>
+    <span class="tb-sep">·</span>
+    <span class="tb-msg">{{response()?.message}}</span>
+    <button class="tb-close" (click)="dismissTier()" title="Dismiss">×</button>
   </div>
 
   <!-- Candidate list -->
