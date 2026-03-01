@@ -1,0 +1,66 @@
+// search-panel.component.ts — left sidebar (explore mode only)
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule }  from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { SearchService }             from '../../core/services/search.service';
+import { GraphService }              from '../../core/services/graph.service';
+import { SearchResponse, SearchCandidate } from '../../core/models/models';
+
+const EXAMPLES = ['cross border payment','trade settlement','AML sanctions',
+  'risk VaR calculation','regulatory reporting','SWIFT wire transfer',
+  'nostro reconciliation','trade finance','Murex trading system'];
+
+@Component({
+  selector:'abacus-search-panel', standalone:true, imports:[CommonModule,FormsModule],
+  templateUrl:'./search-panel.component.html',
+  styleUrls:  ['./search-panel.component.scss'],
+})
+export class SearchPanelComponent implements OnInit, OnDestroy {
+  private ss      = inject(SearchService);
+  private gs      = inject(GraphService);
+  private destroy = new Subject<void>();
+  private typed$  = new Subject<string>();
+
+  query    = signal('');
+  response = signal<SearchResponse|null>(null);
+  loading  = signal(false);
+  activeId = signal<string|null>(null);
+  examples = EXAMPLES;
+
+  TIER = {
+    HIGH:   {color:'#22c55e', bg:'rgba(5,46,22,.85)',  icon:'✓', label:'AUTO-RESOLVED'  },
+    MEDIUM: {color:'#f59e0b', bg:'rgba(28,17,7,.85)',  icon:'⚡', label:'DISAMBIGUATION' },
+    LOW:    {color:'#ef4444', bg:'rgba(28,5,5,.85)',   icon:'?', label:'LOW CONFIDENCE'  },
+  };
+  tier = computed(() => this.response()?.tier ?? null);
+  tc   = computed(() => this.tier() ? this.TIER[this.tier()!] : null);
+
+  ngOnInit() {
+    this.typed$.pipe(debounceTime(350), distinctUntilChanged(), takeUntil(this.destroy))
+               .subscribe(q => { if (q.trim()) this._run(q); });
+    this.ss.loading$.pipe(takeUntil(this.destroy)).subscribe(l => this.loading.set(l));
+    this.ss.results$.pipe(takeUntil(this.destroy)).subscribe(r => this.response.set(r));
+  }
+  ngOnDestroy() { this.destroy.next(); this.destroy.complete(); }
+
+  onInput(v:string)      { this.query.set(v); this.typed$.next(v); }
+  onEnter()              { if (this.query().trim()) this._run(this.query()); }
+  useExample(ex:string)  { this.query.set(ex); this._run(ex); }
+
+  private _run(q:string) {
+    this.ss.search(q).subscribe(res => {
+      if (res.tier==='HIGH' && res.resolved) this.pick(res.resolved);
+    });
+  }
+
+  pick(c:SearchCandidate) {
+    this.activeId.set(c.entity_id);
+    this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe();
+  }
+
+  loadFull() { this.activeId.set('__full__'); this.gs.loadFull().subscribe(); }
+
+  scoreColor(s:number) { return s>=0.82?'#22c55e':s>=0.65?'#f59e0b':'#ef4444'; }
+  track(_:number, c:SearchCandidate) { return c.entity_id; }
+}

@@ -1,0 +1,42 @@
+<div class="wrap">
+  <!-- Loading -->
+  <div class="loading" *ngIf="loading$ | async">
+    <div class="ring"></div><span>Loading graph…</span>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty" *ngIf="!(subgraph$ | async) && !(loading$ | async)">
+    <svg class="grid-bg"><defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3b82f6" stroke-width=".5"/>
+    </pattern></defs><rect width="100%" height="100%" fill="url(#g)" opacity=".04"/></svg>
+    <span class="ei">◈</span>
+    <span class="el">SEARCH THE ENTERPRISE GRAPH</span>
+    <span class="es">or click FULL MAP in the header</span>
+  </div>
+
+  <!-- SVG rendered by D3 — always in DOM so @ViewChild resolves before data arrives -->
+  <svg #svg class="graph-svg" [hidden]="!(subgraph$ | async)"></svg>
+
+  <!-- Top toolbar -->
+  <div class="bar-top" *ngIf="subgraph$ | async as sg">
+    <div class="pill">{{sg.nodes.length}} nodes · {{sg.edges.length}} edges</div>
+    <div class="pill reg" *ngIf="sg.regulatory">⚖ {{sg.regulatory}}</div>
+    <button class="pill esc" *ngIf="selected$ | async" (click)="gs.clearSelection()">ESC · clear</button>
+  </div>
+
+  <!-- Bottom legend -->
+  <div class="bar-bot" *ngIf="subgraph$ | async">
+    <div class="legend">
+      <div *ngFor="let e of critEntries" class="li">
+        <svg width="18" height="6">
+          <line x1="0" y1="3" x2="18" y2="3"
+            [attr.stroke]="e[1]"
+            [attr.stroke-width]="e[0]==='Critical'?3:e[0]==='High'?2:1.5"
+            [attr.stroke-dasharray]="e[0]==='Medium'?'6,4':e[0]==='Low'?'3,6':null"/>
+        </svg>
+        <span>{{e[0]}}</span>
+      </div>
+    </div>
+    <span class="hint">scroll=zoom · drag=pan · click=inspect</span>
+  </div>
+</div>

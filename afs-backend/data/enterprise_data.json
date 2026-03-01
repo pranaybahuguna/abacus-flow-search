@@ -1,0 +1,322 @@
+{
+  "systems": [
+    {
+      "id": "SYS_001",
+      "name": "Murex",
+      "domain": "Trading",
+      "purpose": "Front-office trade capture, pricing, and risk management for capital markets instruments including FX, derivatives, fixed income and equities",
+      "owner": "Capital Markets Technology",
+      "tags": ["trading", "risk", "front-office", "derivatives", "FX"],
+      "embed_text": "Murex is the primary front-office trading system responsible for trade capture, real-time risk management, pricing of derivatives, FX spot and forward trades, fixed income instruments and equities. It is the source of truth for all trading book positions."
+    },
+    {
+      "id": "SYS_002",
+      "name": "Temenos T24",
+      "domain": "Core Banking",
+      "purpose": "Core banking platform managing customer accounts, retail deposits, loans, and general ledger",
+      "owner": "Retail Banking Technology",
+      "tags": ["core-banking", "accounts", "deposits", "loans", "retail", "ledger"],
+      "embed_text": "Temenos T24 is the core banking system managing all retail and corporate customer accounts, savings and current deposits, loan origination and servicing, and the enterprise general ledger. It is the system of record for customer balances and banking products."
+    },
+    {
+      "id": "SYS_003",
+      "name": "SWIFT Gateway",
+      "domain": "Payments",
+      "purpose": "Manages all outbound and inbound SWIFT messaging for cross-border payments, MT103, MT202, and treasury confirmations",
+      "owner": "Payments Technology",
+      "tags": ["SWIFT", "payments", "cross-border", "MT103", "MT202", "messaging"],
+      "embed_text": "SWIFT Gateway is the bank's connectivity layer to the SWIFT network. It processes all interbank payment messages including MT103 customer credit transfers, MT202 bank-to-bank transfers, and FX confirmation messages. It handles message formatting, validation, and routing."
+    },
+    {
+      "id": "SYS_004",
+      "name": "Payments Hub",
+      "domain": "Payments",
+      "purpose": "Central payment orchestration engine routing domestic and international payment instructions across CHAPS, SEPA, BACS, and Faster Payments rails",
+      "owner": "Payments Technology",
+      "tags": ["payments", "CHAPS", "SEPA", "BACS", "Faster Payments", "routing", "orchestration"],
+      "embed_text": "Payments Hub is the central orchestration layer for all payment flows. It receives payment instructions from core banking and trading systems, enriches them, applies routing rules, and dispatches them across the appropriate payment rail — CHAPS for high value same-day GBP, SEPA for euro zone, BACS for bulk, and Faster Payments for real-time retail."
+    },
+    {
+      "id": "SYS_005",
+      "name": "Kondor+",
+      "domain": "Treasury",
+      "purpose": "Treasury management system for money market, FX, and repo transactions. Manages nostro accounts and cash positions for treasury desk",
+      "owner": "Treasury Technology",
+      "tags": ["treasury", "FX", "money-market", "repo", "nostro", "cash"],
+      "embed_text": "Kondor+ is the treasury management system used by the treasury desk for money market instruments, FX transactions, and repo agreements. It tracks nostro account balances, manages cash and liquidity positions, and feeds payment instructions to the payments infrastructure."
+    },
+    {
+      "id": "SYS_006",
+      "name": "Calypso",
+      "domain": "Post-Trade",
+      "purpose": "Post-trade processing, trade confirmation, settlement instruction generation, and securities lifecycle management",
+      "owner": "Operations Technology",
+      "tags": ["post-trade", "settlement", "confirmation", "securities", "operations", "lifecycle"],
+      "embed_text": "Calypso handles all post-trade operations including trade confirmation matching with counterparties, generation of settlement instructions for equities and fixed income, securities lifecycle event processing such as corporate actions and coupon payments, and coordination with custodians and CSDs."
+    },
+    {
+      "id": "SYS_007",
+      "name": "Actimize",
+      "domain": "Compliance",
+      "purpose": "Anti-money laundering transaction monitoring, sanctions screening, and fraud detection across all payment and trade flows",
+      "owner": "Financial Crime Technology",
+      "tags": ["AML", "sanctions", "fraud", "compliance", "transaction-monitoring", "KYC"],
+      "embed_text": "Actimize is the financial crime and compliance platform. It performs real-time AML transaction monitoring on all payment flows, screens counterparties and beneficiaries against sanctions lists, detects fraud patterns, and generates suspicious activity reports. It intercepts flows from the Payments Hub and trade systems before execution."
+    },
+    {
+      "id": "SYS_008",
+      "name": "DataWarehouse",
+      "domain": "Reporting",
+      "purpose": "Enterprise data warehouse aggregating transaction, position, and customer data for regulatory reporting, MIS, and analytics",
+      "owner": "Data & Analytics",
+      "tags": ["reporting", "analytics", "regulatory", "MIS", "data-warehouse", "BI"],
+      "embed_text": "The Enterprise DataWarehouse consolidates data from all operational systems including trading, payments, core banking, and risk platforms. It powers regulatory reports such as COREP, FINREP, and transaction reporting to the FCA and ECB. It also provides management information and analytics dashboards."
+    },
+    {
+      "id": "SYS_009",
+      "name": "Finastra Fusion",
+      "domain": "Trade Finance",
+      "purpose": "Trade finance platform managing letters of credit, guarantees, documentary collections, and supply chain finance",
+      "owner": "Trade Finance Technology",
+      "tags": ["trade-finance", "letters-of-credit", "guarantees", "documentary", "supply-chain"],
+      "embed_text": "Finastra Fusion manages the full lifecycle of trade finance instruments including issuance and processing of letters of credit, bank guarantees, documentary collections, and supply chain finance facilities. It interfaces with core banking for limit checking and with SWIFT for documentary message exchange."
+    },
+    {
+      "id": "SYS_010",
+      "name": "RiskEngine",
+      "domain": "Risk",
+      "purpose": "Enterprise risk calculation engine computing VaR, counterparty credit risk, PFE, and regulatory capital requirements across all asset classes",
+      "owner": "Risk Technology",
+      "tags": ["risk", "VaR", "credit-risk", "PFE", "capital", "Basel", "regulatory"],
+      "embed_text": "The RiskEngine is the central calculation engine for market risk, counterparty credit risk, and regulatory capital. It consumes trade positions from Murex and Calypso, runs Monte Carlo and historical VaR calculations, computes Potential Future Exposure for derivatives, and produces Basel III capital adequacy metrics reported to the regulator."
+    }
+  ],
+
+  "flows": [
+    {
+      "id": "FLOW_001",
+      "source": "SYS_001",
+      "target": "SYS_006",
+      "data_entity": "Trade Confirmation",
+      "business_process": "Trade Settlement",
+      "protocol": "MQ / FIX",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "High",
+      "description": "Murex sends confirmed trade details to Calypso for post-trade processing and settlement instruction generation",
+      "embed_text": "Trade data flows from Murex front-office system to Calypso post-trade system. This is part of the trade settlement business process. Murex sends confirmed deal details including trade economics, counterparty, and settlement dates via FIX protocol over MQ. Calypso uses this to generate settlement instructions."
+    },
+    {
+      "id": "FLOW_002",
+      "source": "SYS_006",
+      "target": "SYS_004",
+      "data_entity": "Settlement Payment Instruction",
+      "business_process": "Trade Settlement",
+      "protocol": "ISO 20022 / REST",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "High",
+      "description": "Calypso sends settlement payment instructions to Payments Hub for cash leg of securities trades",
+      "embed_text": "Calypso sends cash settlement instructions to the Payments Hub as part of securities settlement. For each securities trade reaching settlement date, Calypso generates a payment instruction for the cash leg and sends it to the Payments Hub for routing over CHAPS or SWIFT depending on currency and counterparty."
+    },
+    {
+      "id": "FLOW_003",
+      "source": "SYS_004",
+      "target": "SYS_003",
+      "data_entity": "SWIFT Payment Message",
+      "business_process": "Cross-Border Payment",
+      "protocol": "SWIFT MT / ISO 20022",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "Critical",
+      "description": "Payments Hub routes cross-border payment instructions to SWIFT Gateway for international dispatch",
+      "embed_text": "International and cross-border payment instructions flow from the Payments Hub to the SWIFT Gateway. The Payments Hub formats the payment into MT103 for customer payments or MT202 for bank transfers and sends to SWIFT Gateway which validates and dispatches onto the SWIFT network to correspondent banks."
+    },
+    {
+      "id": "FLOW_004",
+      "source": "SYS_004",
+      "target": "SYS_007",
+      "data_entity": "Payment Instruction for Screening",
+      "business_process": "AML and Sanctions Screening",
+      "protocol": "REST API",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "Critical",
+      "description": "All payment instructions are screened by Actimize for sanctions and AML before execution",
+      "embed_text": "Every payment instruction from the Payments Hub is sent to Actimize for sanctions screening and AML transaction monitoring before it is released for execution. This is a blocking call — payments are held until Actimize returns a clear or alert. Part of the financial crime compliance process."
+    },
+    {
+      "id": "FLOW_005",
+      "source": "SYS_002",
+      "target": "SYS_004",
+      "data_entity": "Customer Payment Instruction",
+      "business_process": "Retail Payment",
+      "protocol": "ISO 20022",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "High",
+      "description": "Core banking sends customer-initiated payment instructions to Payments Hub for processing",
+      "embed_text": "Customer payment instructions originating in Temenos T24 core banking — such as online banking transfers, standing orders, and direct debits — are sent to the Payments Hub for routing and execution. This covers retail and corporate customer payments across all domestic and international rails."
+    },
+    {
+      "id": "FLOW_006",
+      "source": "SYS_005",
+      "target": "SYS_004",
+      "data_entity": "Treasury Payment Instruction",
+      "business_process": "Treasury Settlement",
+      "protocol": "ISO 20022",
+      "direction": "source_to_target",
+      "frequency": "Batch + Real-time",
+      "criticality": "High",
+      "description": "Kondor+ sends FX and money market settlement payments to the Payments Hub",
+      "embed_text": "Kondor+ treasury system sends payment instructions to the Payments Hub for settlement of FX trades, money market placements, and repo transactions. These are typically high-value same-day payments routed over CHAPS or SWIFT."
+    },
+    {
+      "id": "FLOW_007",
+      "source": "SYS_001",
+      "target": "SYS_010",
+      "data_entity": "Trade Positions",
+      "business_process": "Risk Calculation",
+      "protocol": "Database / API",
+      "direction": "source_to_target",
+      "frequency": "Real-time + EOD Batch",
+      "criticality": "High",
+      "description": "Murex publishes trade positions and market data to RiskEngine for VaR and capital calculations",
+      "embed_text": "Murex sends real-time and end-of-day trade positions including all open derivatives, FX, and fixed income positions to the RiskEngine. RiskEngine uses these to calculate VaR, counterparty credit risk, and regulatory capital metrics. This is core to the market risk and Basel III reporting process."
+    },
+    {
+      "id": "FLOW_008",
+      "source": "SYS_006",
+      "target": "SYS_010",
+      "data_entity": "Securities Positions",
+      "business_process": "Risk Calculation",
+      "protocol": "Database / API",
+      "direction": "source_to_target",
+      "frequency": "EOD Batch",
+      "criticality": "Medium",
+      "description": "Calypso sends securities positions to RiskEngine for credit and capital calculations",
+      "embed_text": "Calypso sends end-of-day securities positions including equities and fixed income holdings to the RiskEngine for credit risk and capital adequacy calculations."
+    },
+    {
+      "id": "FLOW_009",
+      "source": "SYS_001",
+      "target": "SYS_008",
+      "data_entity": "Trade Data",
+      "business_process": "Regulatory Reporting",
+      "protocol": "ETL / Database",
+      "direction": "source_to_target",
+      "frequency": "EOD Batch",
+      "criticality": "Medium",
+      "description": "Murex feeds trade data into the DataWarehouse for regulatory and management reporting",
+      "embed_text": "Murex sends end-of-day trade data to the enterprise DataWarehouse for aggregation. This feeds regulatory reports including EMIR trade reporting, MiFID transaction reporting, and management information dashboards."
+    },
+    {
+      "id": "FLOW_010",
+      "source": "SYS_004",
+      "target": "SYS_008",
+      "data_entity": "Payment Transaction Data",
+      "business_process": "Regulatory Reporting",
+      "protocol": "ETL / Database",
+      "direction": "source_to_target",
+      "frequency": "EOD Batch",
+      "criticality": "Medium",
+      "description": "Payments Hub feeds all payment transaction records into the DataWarehouse",
+      "embed_text": "The Payments Hub sends daily payment transaction data to the enterprise DataWarehouse. This is used for PSD2 transaction reporting, AML lookback analytics, liquidity reporting to the regulator, and internal management reporting on payment volumes and values."
+    },
+    {
+      "id": "FLOW_011",
+      "source": "SYS_002",
+      "target": "SYS_008",
+      "data_entity": "Customer Account Data",
+      "business_process": "Regulatory Reporting",
+      "protocol": "ETL / Database",
+      "direction": "source_to_target",
+      "frequency": "EOD Batch",
+      "criticality": "Medium",
+      "description": "Core banking sends customer account balances and transaction history to DataWarehouse",
+      "embed_text": "Temenos T24 sends daily customer account data including balances, transaction history, and product details to the DataWarehouse for COREP, FINREP, and retail banking regulatory reporting."
+    },
+    {
+      "id": "FLOW_012",
+      "source": "SYS_009",
+      "target": "SYS_002",
+      "data_entity": "Trade Finance Utilisation",
+      "business_process": "Trade Finance Processing",
+      "protocol": "REST API",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "High",
+      "description": "Finastra Fusion notifies core banking of letter of credit utilisations and guarantee drawdowns for limit and balance updates",
+      "embed_text": "Finastra Fusion trade finance platform sends utilisation events to Temenos T24 core banking when letters of credit are drawn, guarantees called, or trade finance facilities utilised. Core banking updates customer limits and generates the corresponding accounting entries."
+    },
+    {
+      "id": "FLOW_013",
+      "source": "SYS_003",
+      "target": "SYS_005",
+      "data_entity": "Inbound SWIFT Payment Confirmation",
+      "business_process": "Nostro Reconciliation",
+      "protocol": "SWIFT MT",
+      "direction": "source_to_target",
+      "frequency": "Real-time",
+      "criticality": "High",
+      "description": "SWIFT Gateway delivers incoming MT202 and MT910 confirmations to Kondor+ for nostro reconciliation",
+      "embed_text": "The SWIFT Gateway receives incoming payment confirmations and account statements from correspondent banks and delivers them to Kondor+ treasury system for nostro account reconciliation. MT910 credit confirmations and MT940 statements are used to reconcile expected versus actual nostro balances."
+    },
+    {
+      "id": "FLOW_014",
+      "source": "SYS_007",
+      "target": "SYS_008",
+      "data_entity": "Compliance Alert Data",
+      "business_process": "Financial Crime Reporting",
+      "protocol": "ETL / API",
+      "direction": "source_to_target",
+      "frequency": "Real-time + Batch",
+      "criticality": "High",
+      "description": "Actimize sends AML alerts and SAR data to DataWarehouse for compliance reporting and analytics",
+      "embed_text": "Actimize sends financial crime alerts, suspicious activity reports, and sanctions hit data to the enterprise DataWarehouse for compliance reporting, regulatory submission, and trend analytics used by the financial crime team."
+    }
+  ],
+
+  "business_processes": [
+    {
+      "id": "BP_001",
+      "name": "Trade Settlement",
+      "description": "End-to-end process from trade execution in the front office through to cash and securities settlement with counterparties and CSDs",
+      "systems_involved": ["SYS_001", "SYS_006", "SYS_004", "SYS_003"],
+      "flows_involved": ["FLOW_001", "FLOW_002", "FLOW_003"],
+      "regulatory_relevance": "EMIR, MiFID II, CSDR"
+    },
+    {
+      "id": "BP_002",
+      "name": "Cross-Border Payment",
+      "description": "Processing of international payment instructions from origination in core banking or treasury through SWIFT dispatch to correspondent banks",
+      "systems_involved": ["SYS_002", "SYS_005", "SYS_004", "SYS_007", "SYS_003"],
+      "flows_involved": ["FLOW_005", "FLOW_006", "FLOW_004", "FLOW_003"],
+      "regulatory_relevance": "PSD2, FATF, Sanctions"
+    },
+    {
+      "id": "BP_003",
+      "name": "Risk Calculation",
+      "description": "Daily and intraday risk calculations including VaR, counterparty credit risk, and Basel III capital requirements",
+      "systems_involved": ["SYS_001", "SYS_006", "SYS_010"],
+      "flows_involved": ["FLOW_007", "FLOW_008"],
+      "regulatory_relevance": "Basel III, FRTB, CRR2"
+    },
+    {
+      "id": "BP_004",
+      "name": "Regulatory Reporting",
+      "description": "Aggregation and submission of regulatory reports to FCA, ECB, and other regulators",
+      "systems_involved": ["SYS_001", "SYS_002", "SYS_004", "SYS_007", "SYS_008"],
+      "flows_involved": ["FLOW_009", "FLOW_010", "FLOW_011", "FLOW_014"],
+      "regulatory_relevance": "COREP, FINREP, EMIR, MiFID II, PSD2"
+    },
+    {
+      "id": "BP_005",
+      "name": "AML and Sanctions Screening",
+      "description": "Real-time screening of all payment flows and trade activity against sanctions lists and AML transaction monitoring rules",
+      "systems_involved": ["SYS_004", "SYS_007", "SYS_008"],
+      "flows_involved": ["FLOW_004", "FLOW_014"],
+      "regulatory_relevance": "FATF, HM Treasury Sanctions, FCA SYSC"
+    }
+  ]
+}

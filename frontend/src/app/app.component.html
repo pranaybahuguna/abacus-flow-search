@@ -1,0 +1,59 @@
+<div class="shell">
+
+  <header class="hdr">
+    <div class="brand">
+      <div class="bm">A</div>
+      <div class="bt">
+        <div class="bn">ABACUS</div>
+        <div class="bs">ENTERPRISE GRAPH INTELLIGENCE</div>
+      </div>
+    </div>
+
+    <div class="dv"></div>
+
+    <div class="mode-toggle">
+      <button [class.active]="mode()==='graph'"       (click)="setMode('graph')">◈ EXPLORE</button>
+      <button [class.active]="mode()==='impact'"      (click)="setMode('impact')"      class="imp-btn">⚡ IMPACT</button>
+      <button [class.active]="mode()==='dependency'"  (click)="setMode('dependency')"  class="dep-btn">⬡ DEPENDENCIES</button>
+    </div>
+
+    <div class="ctx-label" *ngIf="mode()==='graph' && (subgraph$ | async) as sg">
+      <span class="cl-icon">◈</span>{{sg.label}}
+      <span class="cl-reg" *ngIf="sg.regulatory"> · {{sg.regulatory}}</span>
+    </div>
+    <div class="ctx-label" *ngIf="mode()==='impact'">
+      What breaks when you change a system?
+    </div>
+    <div class="ctx-label" *ngIf="mode()==='dependency'">
+      Full dependency map — upstream &amp; downstream
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="stats" *ngIf="(subgraph$ | async) as sg">
+      <div class="pill">{{sg.nodes.length}} nodes</div>
+      <div class="pill">{{sg.edges.length}} edges</div>
+    </div>
+    <button class="btn-full" (click)="loadFull()">FULL MAP</button>
+  </header>
+
+  <div class="body">
+    <abacus-search-panel *ngIf="mode()==='graph'" class="sidebar"/>
+    <div class="main">
+      <ng-container *ngIf="mode()==='graph'">
+        <abacus-graph-canvas/>
+        <abacus-inspector-panel *ngIf="selected$ | async"/>
+      </ng-container>
+      <abacus-impact-view      *ngIf="mode()==='impact'"/>
+      <abacus-dependency-view  *ngIf="mode()==='dependency'"/>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toasts">
+    <div *ngFor="let t of toasts()" class="toast t-{{t.kind}}" (click)="dismiss(t.id)">
+      {{t.kind==='error'?'✕':t.kind==='success'?'✓':'ℹ'}} {{t.message}}
+    </div>
+  </div>
+
+</div>

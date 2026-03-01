@@ -1,0 +1,202 @@
+<div class="wrap">
+
+  <!-- ── LEFT COLUMN ── -->
+  <aside class="left">
+
+    <div class="sect">
+      <div class="lbl">FULL DEPENDENCY MAP</div>
+      <div class="sub">upstream + downstream in one view</div>
+      <div class="box">
+        <input [ngModel]="query()" (ngModelChange)="query.set($event)"
+               (keydown.enter)="run()" placeholder="System or process name…"
+               autocomplete="off" spellcheck="false"/>
+        <div class="spin" *ngIf="loading$ | async"></div>
+      </div>
+      <button class="btn-run" (click)="run()"
+              [disabled]="!!(loading$ | async) || !query().trim()">
+        ⬡ MAP DEPENDENCIES
+      </button>
+    </div>
+
+    <!-- Hop depth -->
+    <div class="sect">
+      <div class="lbl">TRAVERSAL DEPTH</div>
+      <div class="hops">
+        <button *ngFor="let h of [1,2,3]"
+                class="hop-btn" [class.active]="maxHops()===h" (click)="maxHops.set(h)">
+          HOP-{{h}}<span class="hs"> {{h===1?'direct only':h===2?'+ indirect':'full graph'}}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Examples -->
+    <div class="sect">
+      <div class="lbl">EXAMPLES</div>
+      <div class="ex-list">
+        <button *ngFor="let e of examples" class="ex" (click)="run(e)">{{e}}</button>
+      </div>
+    </div>
+
+    <!-- Summary card (once resolved) -->
+    <div class="sect" *ngIf="(result$ | async)?.footprint as fp">
+      <div class="lbl">FOOTPRINT SUMMARY</div>
+      <div class="sum-card">
+        <div class="sum-row">
+          <span class="srl">Core systems</span>
+          <span class="srv">{{fp.summary.core_count ?? fp.core.length}}</span>
+        </div>
+        <div class="sum-row">
+          <span class="srl">Upstream dependencies</span>
+          <span class="srv up">{{fp.summary.upstream_count}}</span>
+        </div>
+        <div class="sum-row">
+          <span class="srl">Downstream effects</span>
+          <span class="srv dn">{{fp.summary.downstream_count}}</span>
+        </div>
+        <div class="sum-row total">
+          <span class="srl">Total footprint</span>
+          <span class="srv">{{fp.summary.total_footprint}} systems</span>
+        </div>
+      </div>
+      <div class="reg" *ngIf="fp.regulatory">
+        ⚖ {{fp.regulatory}}
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── RIGHT COLUMN ── -->
+  <main class="right">
+
+    <!-- Empty -->
+    <div class="empty" *ngIf="!(result$ | async) && !(loading$ | async)">
+      <span class="ei">⬡</span>
+      <span class="el">ENTER A SYSTEM OR PROCESS NAME</span>
+      <span class="es">Maps upstream dependencies and downstream effects</span>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" *ngIf="loading$ | async">
+      <div class="ring"></div><span>Mapping dependencies…</span>
+    </div>
+
+    <!-- Ambiguous -->
+    <div class="ambi" *ngIf="(result$ | async)?.resolution === 'AMBIGUOUS'">
+      <div class="ambi-h">⬡ DISAMBIGUATION NEEDED</div>
+      <div class="ambi-m">{{(result$ | async)?.message}}</div>
+      <div class="cands">
+        <button *ngFor="let c of (result$ | async)?.candidates"
+                class="cand" (click)="pick(c)">
+          <span>{{c.name}}</span>
+          <span class="ct">{{c.entity_type.replace('_',' ')}}</span>
+          <span class="cs">{{(c.score*100).toFixed(0)}}%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <ng-container *ngIf="(result$ | async) as res">
+      <ng-container *ngIf="res.resolution === 'RESOLVED' && res.footprint as fp">
+
+        <!-- Header -->
+        <div class="hdr-row">
+          <div>
+            <div class="res-type">{{res.resolved_type?.replace('_',' ')?.toUpperCase()}}</div>
+            <div class="res-name">{{res.resolved_name}}</div>
+          </div>
+          <button class="btn-graph" (click)="viewInGraph(fp)">◈ VIEW IN GRAPH</button>
+        </div>
+
+        <!-- Flow diagram: upstream → core → downstream -->
+        <div class="diagram">
+
+          <!-- UPSTREAM column -->
+          <div class="col col-up">
+            <div class="col-hdr up">
+              <span class="col-icon">↓</span>
+              UPSTREAM
+              <span class="col-ct">{{upstreamList(fp).length}}</span>
+            </div>
+            <div class="col-sub">what this depends on</div>
+
+            <div class="empty-col" *ngIf="upstreamList(fp).length === 0">
+              no upstream dependencies
+            </div>
+
+            <div *ngFor="let node of upstreamList(fp)"
+                 class="sys-card"
+                 [style.background]="domBg(node.domain)"
+                 [style.border-color]="domBd(node.domain)">
+              <div class="sc-top">
+                <div class="sc-hop up">HOP-{{node.hops}} · {{hopLabel(node.hops).toUpperCase()}}</div>
+                <div class="sc-crit" [style.color]="critColor(topCrit(node))">{{topCrit(node)}}</div>
+              </div>
+              <div class="sc-name" [style.color]="accent(node.domain)">{{node.name}}</div>
+              <div class="sc-domain">{{node.domain}}</div>
+              <div class="sc-flows">
+                <div *ngFor="let f of node.via_flows" class="sc-flow">
+                  <span class="fc" [style.color]="critColor(f.criticality)">●</span>
+                  {{f.data_entity}}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Centre arrow column -->
+          <div class="col col-centre">
+            <div class="arrow-up">↓</div>
+
+            <!-- CORE systems -->
+            <div class="col-hdr core-hdr">
+              CORE
+              <span class="col-ct">{{fp.core.length}}</span>
+            </div>
+            <div *ngFor="let s of fp.core"
+                 class="sys-card core-card"
+                 [style.background]="domBg(s.domain)"
+                 [style.border-color]="accent(s.domain)">
+              <div class="sc-name core-name" [style.color]="accent(s.domain)">{{s.name}}</div>
+              <div class="sc-domain">{{s.domain}}</div>
+            </div>
+
+            <div class="arrow-dn">↓</div>
+          </div>
+
+          <!-- DOWNSTREAM column -->
+          <div class="col col-dn">
+            <div class="col-hdr dn">
+              <span class="col-icon">↓</span>
+              DOWNSTREAM
+              <span class="col-ct">{{downstreamList(fp).length}}</span>
+            </div>
+            <div class="col-sub">what this feeds into</div>
+
+            <div class="empty-col" *ngIf="downstreamList(fp).length === 0">
+              no downstream effects
+            </div>
+
+            <div *ngFor="let node of downstreamList(fp)"
+                 class="sys-card"
+                 [style.background]="domBg(node.domain)"
+                 [style.border-color]="domBd(node.domain)">
+              <div class="sc-top">
+                <div class="sc-hop dn">HOP-{{node.hops}} · {{hopLabel(node.hops).toUpperCase()}}</div>
+                <div class="sc-crit" [style.color]="critColor(topCrit(node))">{{topCrit(node)}}</div>
+              </div>
+              <div class="sc-name" [style.color]="accent(node.domain)">{{node.name}}</div>
+              <div class="sc-domain">{{node.domain}}</div>
+              <div class="sc-flows">
+                <div *ngFor="let f of node.via_flows" class="sc-flow">
+                  <span class="fc" [style.color]="critColor(f.criticality)">●</span>
+                  {{f.data_entity}}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </ng-container>
+    </ng-container>
+
+  </main>
+</div>

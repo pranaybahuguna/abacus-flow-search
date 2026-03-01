@@ -1,0 +1,89 @@
+<aside class="panel" *ngIf="selected$ | async as sel">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hc">
+      @if (sel.kind==='node' && sel.node; as node) {
+        <div class="ml" [style.color]="ds(node.domain).accent">{{node.domain.toUpperCase()}}</div>
+        <div class="mn">{{node.name}}</div>
+        <div class="mid">{{node.id}}</div>
+      }
+      @if (sel.kind==='edge' && sel.edge; as edge) {
+        <div class="ml" [style.color]="cs(edge.criticality)">{{edge.criticality.toUpperCase()}} FLOW</div>
+        <div class="mn">{{edge.data_entity}}</div>
+        <div class="mid">
+          {{edge.sourceNode?.name ?? edge.source}} → {{edge.targetNode?.name ?? edge.target}}
+        </div>
+      }
+    </div>
+    <button class="close" (click)="gs.clearSelection()">×</button>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- NODE detail -->
+    @if (sel.kind==='node' && sel.node; as node) {
+      <div class="row"><span class="rl">Owner</span><span class="rv">{{node.owner}}</span></div>
+
+      <div class="div"></div>
+      <div class="sl">PURPOSE</div>
+      <p class="purpose">{{node.purpose}}</p>
+
+      <div class="div"></div>
+      <div class="sl">TAGS</div>
+      <div class="tags">
+        <span *ngFor="let t of node.tags" class="tag">{{t}}</span>
+      </div>
+
+      <!-- Flows from current subgraph -->
+      <ng-container *ngIf="subgraph$ | async as sg">
+        <div class="div"></div>
+        <div class="sl">INBOUND ({{inbound(sg, node.id).length}})</div>
+        <div *ngFor="let f of inbound(sg, node.id)" class="fr">
+          <div class="fd" [style.background]="cs(f.criticality)"></div>
+          <span class="fp">{{sysName(sg, f.source)}}</span>
+          <span class="fc" [style.color]="cs(f.criticality)">{{f.criticality}}</span>
+        </div>
+        <div class="sl mt">OUTBOUND ({{outbound(sg, node.id).length}})</div>
+        <div *ngFor="let f of outbound(sg, node.id)" class="fr">
+          <div class="fd" [style.background]="cs(f.criticality)"></div>
+          <span class="fp">{{sysName(sg, f.target)}}</span>
+          <span class="fc" [style.color]="cs(f.criticality)">{{f.criticality}}</span>
+        </div>
+      </ng-container>
+    }
+
+    <!-- EDGE detail -->
+    @if (sel.kind==='edge' && sel.edge; as edge) {
+      <div class="row"><span class="rl">Flow ID</span>          <span class="rv">{{edge.id}}</span></div>
+      <div class="row"><span class="rl">Business Process</span> <span class="rv">{{edge.business_process}}</span></div>
+      <div class="row"><span class="rl">Protocol</span>         <span class="rv">{{edge.protocol}}</span></div>
+      <div class="row"><span class="rl">Frequency</span>        <span class="rv">{{edge.frequency}}</span></div>
+      <div class="row">
+        <span class="rl">Criticality</span>
+        <span class="rv" [style.color]="cs(edge.criticality)">{{edge.criticality}}</span>
+      </div>
+
+      <div class="div"></div>
+      <div class="sl">ENDPOINTS</div>
+
+      <div class="sys" *ngIf="edge.sourceNode"
+           [style.background]="ds(edge.sourceNode.domain).bg"
+           [style.border-color]="ds(edge.sourceNode.domain).border">
+        <div class="sr" [style.color]="ds(edge.sourceNode.domain).accent">SOURCE · {{edge.sourceNode.domain}}</div>
+        <div class="sn">{{edge.sourceNode.name}}</div>
+      </div>
+
+      <div class="arr">↓</div>
+
+      <div class="sys" *ngIf="edge.targetNode"
+           [style.background]="ds(edge.targetNode.domain).bg"
+           [style.border-color]="ds(edge.targetNode.domain).border">
+        <div class="sr" [style.color]="ds(edge.targetNode.domain).accent">TARGET · {{edge.targetNode.domain}}</div>
+        <div class="sn">{{edge.targetNode.name}}</div>
+      </div>
+    }
+
+  </div>
+</aside>

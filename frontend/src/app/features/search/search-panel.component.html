@@ -1,0 +1,59 @@
+<aside class="panel">
+  <!-- Search input -->
+  <div class="sect">
+    <div class="box" [class.active]="query()">
+      <span class="si">⌕</span>
+      <input [ngModel]="query()" (ngModelChange)="onInput($event)"
+             (keydown.enter)="onEnter()" placeholder="Search systems, flows…"
+             autocomplete="off" spellcheck="false"/>
+      <div class="spin" *ngIf="loading()"></div>
+    </div>
+    <button class="btn-s" (click)="onEnter()" [disabled]="loading()||!query().trim()">SEARCH →</button>
+  </div>
+
+  <!-- Quick examples -->
+  <div class="sect">
+    <div class="lbl">QUICK QUERIES</div>
+    <div class="chips">
+      <button *ngFor="let ex of examples" class="chip" (click)="useExample(ex)">{{ex}}</button>
+    </div>
+  </div>
+
+  <!-- Confidence tier -->
+  <div class="sect" *ngIf="tc() as t">
+    <div class="tier" [style.background]="t.bg" [style.border-color]="t.color+'30'">
+      <div class="tier-i" [style.color]="t.color" [style.border-color]="t.color">{{t.icon}}</div>
+      <div>
+        <div class="tier-l" [style.color]="t.color">{{t.label}}</div>
+        <div class="tier-s">
+          @switch(tier()){@case('HIGH'){Auto-resolved & rendered}@case('MEDIUM'){Select below}@default{Rephrase query}}
+        </div>
+      </div>
+    </div>
+    <div class="tier-m" *ngIf="response()?.message">{{response()!.message}}</div>
+  </div>
+
+  <!-- Candidate list -->
+  <div class="sect results" *ngIf="response()?.candidates?.length">
+    <div class="lbl">MATCHES</div>
+    <div *ngFor="let c of response()!.candidates; trackBy:track"
+         class="cand" [class.active]="activeId()===c.entity_id" (click)="pick(c)">
+      <div class="ch">
+        <span class="cn">{{c.name}}</span>
+        <span class="cs" [style.color]="scoreColor(c.score)">{{(c.score*100).toFixed(0)}}%</span>
+      </div>
+      <div class="cm">{{c.entity_type.replace('_',' ').toUpperCase()}}@if(c.domain){ · {{c.domain}}}</div>
+      <div class="bar"><div [style.width.%]="c.score*100" [style.background]="scoreColor(c.score)"></div></div>
+    </div>
+  </div>
+
+  <!-- Empty -->
+  <div class="empty" *ngIf="!loading()&&!response()">
+    <span class="ei">◈</span><span>search to explore</span>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="btn-f" (click)="loadFull()">◈ FULL ENTERPRISE MAP</button>
+  </div>
+</aside>

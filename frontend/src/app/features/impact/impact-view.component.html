@@ -1,0 +1,180 @@
+<div class="wrap">
+
+  <!-- ── LEFT COLUMN: input + context ── -->
+  <aside class="left">
+
+    <!-- Search -->
+    <div class="sect">
+      <div class="lbl">ANALYSE SYSTEM CHANGE IMPACT</div>
+      <div class="box">
+        <input [ngModel]="query()" (ngModelChange)="query.set($event)"
+               (keydown.enter)="run()" placeholder="Name a system…"
+               autocomplete="off" spellcheck="false"/>
+        <div class="spin" *ngIf="loading$ | async"></div>
+      </div>
+      <button class="btn-run" (click)="run()" [disabled]="!!(loading$ | async) || !query().trim()">
+        ⚡ ANALYSE BLAST RADIUS
+      </button>
+    </div>
+
+    <!-- Hop depth control -->
+    <div class="sect">
+      <div class="lbl">TRAVERSAL DEPTH</div>
+      <div class="hops">
+        <button *ngFor="let h of [1,2,3]"
+                class="hop-btn" [class.active]="maxHops()===h" (click)="maxHops.set(h)">
+          HOP-{{h}}
+          <span class="hs">{{h===1?'direct only':h===2?'+ indirect':'full graph'}}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick examples -->
+    <div class="sect">
+      <div class="lbl">QUICK EXAMPLES</div>
+      <div class="ex-list">
+        <button *ngFor="let e of examples" class="ex" (click)="run(e)">{{e}}</button>
+      </div>
+    </div>
+
+    <!-- Processes at risk (shown after result) -->
+    <div class="sect" *ngIf="(result$ | async)?.impact as imp">
+      <div class="lbl">PROCESSES AT RISK</div>
+      <div *ngFor="let p of imp.processes_at_risk" class="proc">
+        <div class="pn">{{p.name}}</div>
+        <div class="pr" *ngIf="p.regulatory">⚖ {{p.regulatory}}</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── RIGHT COLUMN: results ── -->
+  <main class="right">
+
+    <!-- Empty -->
+    <div class="empty" *ngIf="!(result$ | async) && !(loading$ | async)">
+      <span class="ei">⚡</span>
+      <span class="el">Enter a system name to see its blast radius</span>
+      <span class="es">Hybrid vector + graph analysis — up to 3 hops deep</span>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" *ngIf="loading$ | async">
+      <div class="ring"></div><span>Traversing dependency graph…</span>
+    </div>
+
+    <!-- Ambiguous -->
+    <div class="ambi" *ngIf="(result$ | async)?.resolution === 'AMBIGUOUS'">
+      <div class="ambi-h">⚡ DISAMBIGUATION NEEDED</div>
+      <div class="ambi-m">{{(result$ | async)?.message}}</div>
+      <div class="cands">
+        <button *ngFor="let c of (result$ | async)?.candidates"
+                class="cand" (click)="pick(c)">
+          <span>{{c.name}}</span>
+          <span class="cs">{{(c.score*100).toFixed(0)}}%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <ng-container *ngIf="(result$ | async)?.impact as imp">
+
+      <!-- Summary bar -->
+      <div class="summary">
+        <div class="src">
+          <span class="src-d" [style.color]="accent(imp.source.domain)">{{imp.source.domain}}</span>
+          <span class="src-n">{{imp.source.name}}</span>
+        </div>
+        <div class="counters">
+          <div class="counter c-crit" *ngIf="imp.summary.critical_count">
+            <span class="cv">{{imp.summary.critical_count}}</span>
+            <span class="cl">CRITICAL</span>
+          </div>
+          <div class="counter c-high" *ngIf="imp.summary.high_count">
+            <span class="cv">{{imp.summary.high_count}}</span>
+            <span class="cl">HIGH</span>
+          </div>
+          <div class="counter c-med" *ngIf="imp.summary.medium_count">
+            <span class="cv">{{imp.summary.medium_count}}</span>
+            <span class="cl">MEDIUM</span>
+          </div>
+          <div class="counter c-reg" *ngIf="imp.summary.regulatory_risk">
+            <span class="cv">⚖</span>
+            <span class="cl">REG RISK</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Critical paths (only if present) -->
+      <div class="section" *ngIf="imp.critical_paths.length">
+        <div class="sh">⚠ CRITICAL FLOWS LEAVING THIS SYSTEM</div>
+        <div *ngFor="let p of imp.critical_paths" class="cpath">
+          <span class="ca">⚠</span>
+          <div class="ci">
+            <div class="ct">→ {{p.to_system}}</div>
+            <div class="cd">{{p.data_entity}} · {{p.process}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No impact -->
+      <div class="none" *ngIf="imp.affected_systems.length === 0">
+        No significant downstream impact found above threshold.
+      </div>
+
+      <!-- Affected systems grouped by hop -->
+      <div *ngFor="let group of byHop(imp.affected_systems)" class="hop-group">
+        <div class="gh">
+          <span class="gl">{{group.label}} Impact</span>
+          <span class="gc">hop-{{group.hop}}</span>
+        </div>
+
+        <div *ngFor="let sys of group.items" class="card"
+             [style.background]="domBg(sys.domain)"
+             [style.border-color]="domBorder(sys.domain)">
+
+          <!-- Card header row -->
+          <div class="card-h" (click)="toggle(sys.id)">
+            <div class="sev-badge" [style.color]="sev(sys.severity).color"
+                 [style.background]="sev(sys.severity).bg"
+                 [style.border-color]="sev(sys.severity).color+'30'">
+              {{sys.severity}}
+            </div>
+            <div class="sys-info">
+              <div class="sys-n" [style.color]="accent(sys.domain)">{{sys.name}}</div>
+              <div class="sys-d">{{sys.domain}}</div>
+            </div>
+            <div class="score-col">
+              <div class="score-bar">
+                <div [style.width]="scoreW(sys.impact_score)"
+                     [style.background]="sevColor(sys.severity)"></div>
+              </div>
+              <div class="score-v" [style.color]="sevColor(sys.severity)">
+                {{(sys.impact_score*100).toFixed(0)}}
+              </div>
+            </div>
+            <button class="explore-btn" (click)="$event.stopPropagation(); explore(sys.id)"
+                    title="View in graph">◈</button>
+            <span class="toggle-ic">{{isOpen(sys.id)?'▲':'▼'}}</span>
+          </div>
+
+          <!-- Reason sentence -->
+          <div class="reason">{{sys.reason}}</div>
+
+          <!-- Expanded detail: via flows -->
+          <div class="detail" *ngIf="isOpen(sys.id)">
+            <div class="dl">VIA FLOWS</div>
+            <div *ngFor="let f of sys.via_flows" class="vf">
+              <span class="vf-c" [style.color]="sevColor(sys.severity)">●</span>
+              <span class="vf-d">{{f.data_entity}}</span>
+              <span class="vf-cr">{{f.criticality}}</span>
+              <span class="vf-p" *ngIf="f.business_process">{{f.business_process}}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </ng-container>
+  </main>
+</div>
