@@ -8,7 +8,7 @@
       <div class="sub">upstream + downstream in one view</div>
       <div class="box">
         <input [ngModel]="query()" (ngModelChange)="query.set($event)"
-               (keydown.enter)="run()" placeholder="System or process name…"
+               (keydown.enter)="run()" placeholder="Search processes, flows &amp; systems…"
                autocomplete="off" spellcheck="false"/>
         <div class="spin" *ngIf="loading$ | async"></div>
       </div>
@@ -29,11 +29,14 @@
       </div>
     </div>
 
-    <!-- Examples -->
+    <!-- Examples — grouped by entity type -->
     <div class="sect">
       <div class="lbl">EXAMPLES</div>
-      <div class="ex-list">
-        <button *ngFor="let e of examples" class="ex" (click)="run(e)">{{e}}</button>
+      <div *ngFor="let grp of exampleGroups" class="eg">
+        <div class="eg-lbl">{{grp.label}}</div>
+        <div class="ex-list">
+          <button *ngFor="let e of grp.items" class="ex" (click)="run(e)">{{e}}</button>
+        </div>
       </div>
     </div>
 

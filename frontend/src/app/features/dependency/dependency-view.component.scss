@@ -20,6 +20,9 @@ input::placeholder{color:#80a4c0}
 .hop-btn{padding:6px 10px;border-radius:6px;border:1px solid #2a5070;background:transparent;color:#b0c6dc;font-size:9px;font-family:'IBM Plex Mono',monospace;cursor:pointer;text-align:left;transition:all .15s}
 .hop-btn.active{border-color:#0f4c75;color:#60a5fa;background:#0a1e32}
 .hs{color:#60a5fa}
+.eg{margin-bottom:6px}
+.eg-lbl{font-size:7px;letter-spacing:.14em;color:#3d6080;margin-bottom:3px;margin-top:5px;font-weight:600}
+.eg:first-child .eg-lbl{margin-top:0}
 .ex-list{display:flex;flex-direction:column;gap:4px}
 .ex{padding:5px 9px;border-radius:6px;border:1px solid #2a5070;background:transparent;color:#b0c6dc;font-size:9px;font-family:'IBM Plex Mono',monospace;cursor:pointer;text-align:left;transition:all .15s}
 .ex:hover{border-color:#3b82f6;color:#60a5fa}

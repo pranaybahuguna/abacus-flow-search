@@ -11,14 +11,14 @@ import {
   ds, SEVERITY_COLOR,
 } from '../../core/models/models';
 
-const EXAMPLES = [
-  'Cross-Border Payment',
-  'Trade Settlement',
-  'Payments Hub',
-  'AML and Sanctions Screening',
-  'Regulatory Reporting',
-  'Murex trading system',
-  'DataWarehouse',
+const EXAMPLE_GROUPS = [
+  { label: 'PROCESSES', items: [
+      'Cross-Border Payment', 'Trade Settlement',
+      'AML and Sanctions Screening', 'Regulatory Reporting',
+  ]},
+  { label: 'SYSTEMS', items: [
+      'Murex trading system', 'Payments Hub', 'DataWarehouse',
+  ]},
 ];
 
 @Component({
@@ -38,7 +38,7 @@ export class DependencyViewComponent {
   result$  = this.ds.result$;
   loading$ = this.ds.loading$;
 
-  examples = EXAMPLES;
+  exampleGroups = EXAMPLE_GROUPS;
 
   run(q?: string) {
     const query = q ?? this.query();
