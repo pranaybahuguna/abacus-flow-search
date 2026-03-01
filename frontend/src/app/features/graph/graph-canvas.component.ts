@@ -27,6 +27,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   private sim:     d3.Simulation<SimNode, SimEdge> | null = null;
   private _edges:  SimEdge[] = [];
   private destroy  = new Subject<void>();
+  // Stored so _highlight() can programmatically pan the viewport
+  private _zoom:   d3.ZoomBehavior<SVGSVGElement, unknown> | null = null;
+  private _svgSel: d3.Selection<SVGSVGElement, unknown, null, undefined> | null = null;
+  private _vW = 900; private _vH = 560;
 
   ngAfterViewInit() {
     this.gs.subgraph$.pipe(takeUntil(this.destroy))
@@ -106,10 +110,13 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     for (let i=0;i<H;i+=40) grid.append('line').attr('x1',0).attr('y1',i).attr('x2',W).attr('y2',i).attr('stroke','#3b82f6').attr('stroke-width','.5');
     for (let i=0;i<W;i+=40) grid.append('line').attr('x1',i).attr('y1',0).attr('x2',i).attr('y2',H).attr('stroke','#3b82f6').attr('stroke-width','.5');
 
-    // Zoom container
+    // Zoom container — store reference so _highlight() can pan the viewport
+    this._vW = W; this._vH = H;
+    this._svgSel = svg;
     const g = svg.append('g').attr('class','zg');
-    svg.call(d3.zoom<SVGSVGElement, unknown>().scaleExtent([.15,4])
-      .on('zoom', e => g.attr('transform', e.transform as unknown as string)));
+    this._zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([.15,4])
+      .on('zoom', e => g.attr('transform', e.transform as unknown as string));
+    svg.call(this._zoom);
     svg.on('click', () => this.gs.clearSelection());
 
     // Simulation — longer links + stronger repulsion = well-spread layout
@@ -281,6 +288,23 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         }
         return .04;   // dim unrelated edges + their labels completely
       });
+
+    // Pan viewport to edge midpoint when an edge is selected (from panel or graph click)
+    if (sel?.kind === 'edge' && sel.edge) this._panToEdge(sel.edge.id);
+  }
+
+  /** Smoothly pan (preserving zoom scale) so the selected edge's midpoint is centred */
+  private _panToEdge(edgeId: string) {
+    if (!this._zoom || !this._svgSel) return;
+    const e = this._edges.find(e => e.id === edgeId);
+    if (!e) return;
+    const s = e.source as SimNode, t = e.target as SimNode;
+    if (s.x == null || t.x == null) return;
+    const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2;
+    const k  = d3.zoomTransform(this._svgSel.node()!).k;
+    const tx = this._vW / 2 - k * mx, ty = this._vH / 2 - k * my;
+    this._svgSel.transition().duration(480)
+      .call(this._zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
   }
 
   private _clear() {

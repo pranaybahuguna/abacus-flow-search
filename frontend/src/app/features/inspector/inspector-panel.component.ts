@@ -4,7 +4,7 @@ import { CommonModule }      from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { GraphService }      from '../../core/services/graph.service';
 import { SubgraphResponse }  from '../../core/models/models';
-import { ds, CRIT_STROKE }   from '../../core/models/models';
+import { ds, CRIT_STROKE, Flow, SimNode } from '../../core/models/models';
 
 @Component({
   selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule],
@@ -76,5 +76,12 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   /** Unique downstream systems — each with aggregated top criticality + all flows */
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     return this._groupFlows(sg.edges.filter(e => e.source === nodeId), 'target', sg);
+  }
+
+  /** Select a flow from the panel — triggers graph edge highlight + pan-to */
+  selectFlow(flow: Flow, sg: SubgraphResponse) {
+    const sourceNode = sg.nodes.find(n => n.id === flow.source) as SimNode | undefined;
+    const targetNode = sg.nodes.find(n => n.id === flow.target) as SimNode | undefined;
+    this.gs.selectEdge({ ...flow, sourceNode, targetNode });
   }
 }
