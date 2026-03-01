@@ -224,8 +224,8 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         return 1.5;
       });
 
-    // Edge opacity
-    svg.selectAll<SVGPathElement,SimEdge>('path[marker-end]')
+    // Edge group opacity — targets the whole <g class="edge"> so path + label rect + label text all dim together
+    svg.selectAll<SVGGElement,SimEdge>('g.edge')
       .attr('opacity', d => {
         if (!sel) return .78;
         if (sel.kind === 'edge' && sel.edge?.id === d.id) return 1;
@@ -233,7 +233,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
           const src = (d.source as SimNode).id, tgt = (d.target as SimNode).id;
           if (src === sel.node?.id || tgt === sel.node?.id) return 1;
         }
-        return .06;
+        return .04;   // dim unrelated edges + their labels completely
       });
   }
 
