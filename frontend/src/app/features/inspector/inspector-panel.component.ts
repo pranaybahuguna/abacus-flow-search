@@ -1,14 +1,13 @@
 // inspector-panel.component.ts — click-to-inspect panel, collapsible to right
 import { Component, inject, HostBinding, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule }      from '@angular/common';
-import { FormsModule }       from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { GraphService }      from '../../core/services/graph.service';
 import { SubgraphResponse }  from '../../core/models/models';
 import { ds, CRIT_STROKE, Flow, SimNode } from '../../core/models/models';
 
 @Component({
-  selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule, FormsModule],
+  selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule],
   templateUrl:'./inspector-panel.component.html',
   styleUrls:  ['./inspector-panel.component.scss'],
 })

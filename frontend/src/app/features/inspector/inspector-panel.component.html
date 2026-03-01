@@ -42,23 +42,23 @@
         <span *ngFor="let t of node.tags" class="tag">{{t}}</span>
       </div>
 
-      <!-- Flows from current subgraph — grouped by system with live search -->
-      <ng-container *ngIf="subgraph$ | async as sg">
-        <div class="div"></div>
-
-        <!-- ── Flow search bar ────────────────────────────────────────── -->
-        <div class="fsearch">
-          <div class="fbox">
-            <span class="fi">◎</span>
-            <input class="finput"
-                   [ngModel]="flowSearch()"
-                   (ngModelChange)="flowSearch.set($event)"
-                   placeholder="search flows & processes…"
-                   autocomplete="off" spellcheck="false"/>
-            <button class="fclear" *ngIf="flowSearch()"
-                    (click)="flowSearch.set('')" title="Clear search">×</button>
-          </div>
+      <!-- ── Flow search bar — outside subgraph$ so it always renders ── -->
+      <div class="div"></div>
+      <div class="fsearch">
+        <div class="fbox">
+          <span class="fi">◎</span>
+          <input class="finput"
+                 [value]="flowSearch()"
+                 (input)="flowSearch.set($any($event.target).value)"
+                 placeholder="search flows & processes…"
+                 autocomplete="off" spellcheck="false"/>
+          <button class="fclear" *ngIf="flowSearch()"
+                  (click)="flowSearch.set('')" title="Clear search">×</button>
         </div>
+      </div>
+
+      <!-- Flows from current subgraph — grouped by system -->
+      <ng-container *ngIf="subgraph$ | async as sg">
 
         <!-- ── UPSTREAM ─────────────────────────────────────────────── -->
         <ng-container *ngIf="inboundGrouped(sg, node.id) as inGroups">
