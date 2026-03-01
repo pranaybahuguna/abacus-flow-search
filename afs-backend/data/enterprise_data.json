@@ -958,7 +958,7 @@
       "name": "Trade Finance Documentary Credit",
       "description": "Full lifecycle of documentary letters of credit and bank guarantees from issuance through SWIFT documentary messaging, sanctions screening, document checking, payment authorisation, and settlement",
       "systems_involved": ["SYS_002", "SYS_003", "SYS_004", "SYS_007", "SYS_008", "SYS_009"],
-      "flows_involved": ["FLOW_043", "FLOW_044", "FLOW_045", "FLOW_046", "FLOW_047"],
+      "flows_involved": ["FLOW_012", "FLOW_043", "FLOW_044", "FLOW_045", "FLOW_046", "FLOW_047"],
       "regulatory_relevance": "UCP600, ISBP, FATF Trade-Based Money Laundering, CRR2 Trade Finance"
     },
     {

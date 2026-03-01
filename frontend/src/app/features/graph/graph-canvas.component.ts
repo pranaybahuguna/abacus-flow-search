@@ -25,6 +25,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   critEntries = Object.entries(CRIT_STROKE) as [string,string][];
 
   private sim:     d3.Simulation<SimNode, SimEdge> | null = null;
+  private _edges:  SimEdge[] = [];
   private destroy  = new Subject<void>();
 
   ngAfterViewInit() {
@@ -54,6 +55,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const edges: SimEdge[] = sg.edges
       .map(e => ({ ...e, source: byId.get(e.source) as any, target: byId.get(e.target) as any }))
       .filter(e => e.source && e.target);
+    this._edges = edges;
 
     // Defs: arrowheads per criticality + glow filter
     const defs = svg.append('defs');
@@ -70,6 +72,15 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     gf.append('feComposite').attr('in','c').attr('in2','b').attr('operator','in').attr('result','g');
     const fm = gf.append('feMerge');
     fm.append('feMergeNode').attr('in','g'); fm.append('feMergeNode').attr('in','SourceGraphic');
+
+    // Soft glow for 1-hop neighbours
+    const gn = defs.append('filter').attr('id','glow-nb')
+      .attr('x','-30%').attr('y','-30%').attr('width','160%').attr('height','160%');
+    gn.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','b');
+    gn.append('feFlood').attr('flood-color','#60a5fa').attr('flood-opacity','.28').attr('result','c');
+    gn.append('feComposite').attr('in','c').attr('in2','b').attr('operator','in').attr('result','g');
+    const fnm = gn.append('feMerge');
+    fnm.append('feMergeNode').attr('in','g'); fnm.append('feMergeNode').attr('in','SourceGraphic');
 
     // Background grid
     const grid = svg.append('g').attr('opacity','.04');
@@ -165,28 +176,62 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const el  = this.svgRef?.nativeElement; if (!el) return;
     const svg = d3.select(el);
     const sel = this.gs.selectionValue;
+
+    // Compute 1-hop neighbour IDs for the selected node
+    const neighborIds = new Set<string>();
+    if (sel?.kind === 'node' && sel.node) {
+      const selId = sel.node.id;
+      this._edges.forEach(e => {
+        const src = (e.source as SimNode).id;
+        const tgt = (e.target as SimNode).id;
+        if (src === selId) neighborIds.add(tgt);
+        if (tgt === selId) neighborIds.add(src);
+      });
+    }
+
+    // Node opacity: 3-tier — selected=1, neighbour=0.88, far=0.12
     svg.selectAll<SVGGElement,SimNode>('g.node')
       .attr('opacity', d => {
         if (!sel) return 1;
-        if (sel.kind==='node') return sel.node?.id===d.id ? 1 : .18;
-        if (sel.kind==='edge') {
+        if (sel.kind === 'node') {
+          if (sel.node?.id === d.id)   return 1;
+          if (neighborIds.has(d.id))   return 0.88;
+          return 0.12;
+        }
+        if (sel.kind === 'edge') {
           const sn = sel.edge?.sourceNode?.id ?? (sel.edge?.source as any);
           const tn = sel.edge?.targetNode?.id ?? (sel.edge?.target as any);
-          return (d.id===sn||d.id===tn) ? 1 : .18;
+          return (d.id === sn || d.id === tn) ? 1 : .18;
         }
         return 1;
       });
+
+    // Node rect: glow on selected, soft glow + accent border on neighbours
     svg.selectAll<SVGGElement,SimNode>('g.node rect:first-child')
-      .attr('filter', (d:SimNode) => sel?.kind==='node'&&sel.node?.id===d.id?'url(#glow)':null)
-      .attr('stroke', (d:SimNode) => sel?.kind==='node'&&sel.node?.id===d.id ? ds(d.domain).accent : ds(d.domain).border)
-      .attr('stroke-width',(d:SimNode)=>sel?.kind==='node'&&sel.node?.id===d.id?2.5:1.5);
+      .attr('filter', (d: SimNode) => {
+        if (sel?.kind === 'node' && sel.node?.id === d.id) return 'url(#glow)';
+        if (sel?.kind === 'node' && neighborIds.has(d.id)) return 'url(#glow-nb)';
+        return null;
+      })
+      .attr('stroke', (d: SimNode) => {
+        if (sel?.kind === 'node' && sel.node?.id === d.id) return ds(d.domain).accent;
+        if (sel?.kind === 'node' && neighborIds.has(d.id)) return ds(d.domain).accent;
+        return ds(d.domain).border;
+      })
+      .attr('stroke-width', (d: SimNode) => {
+        if (sel?.kind === 'node' && sel.node?.id === d.id) return 2.5;
+        if (sel?.kind === 'node' && neighborIds.has(d.id)) return 2;
+        return 1.5;
+      });
+
+    // Edge opacity
     svg.selectAll<SVGPathElement,SimEdge>('path[marker-end]')
       .attr('opacity', d => {
         if (!sel) return .78;
-        if (sel.kind==='edge'&&sel.edge?.id===d.id) return 1;
-        if (sel.kind==='node') {
-          const src=(d.source as SimNode).id, tgt=(d.target as SimNode).id;
-          if (src===sel.node?.id||tgt===sel.node?.id) return 1;
+        if (sel.kind === 'edge' && sel.edge?.id === d.id) return 1;
+        if (sel.kind === 'node') {
+          const src = (d.source as SimNode).id, tgt = (d.target as SimNode).id;
+          if (src === sel.node?.id || tgt === sel.node?.id) return 1;
         }
         return .06;
       });

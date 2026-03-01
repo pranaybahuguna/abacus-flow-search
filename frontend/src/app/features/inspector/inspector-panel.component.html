@@ -39,13 +39,13 @@
       <!-- Flows from current subgraph -->
       <ng-container *ngIf="subgraph$ | async as sg">
         <div class="div"></div>
-        <div class="sl">INBOUND ({{inbound(sg, node.id).length}})</div>
+        <div class="sl">UPSTREAM SYSTEMS ({{inbound(sg, node.id).length}})</div>
         <div *ngFor="let f of inbound(sg, node.id)" class="fr">
           <div class="fd" [style.background]="cs(f.criticality)"></div>
           <span class="fp">{{sysName(sg, f.source)}}</span>
           <span class="fc" [style.color]="cs(f.criticality)">{{f.criticality}}</span>
         </div>
-        <div class="sl mt">OUTBOUND ({{outbound(sg, node.id).length}})</div>
+        <div class="sl mt">DOWNSTREAM SYSTEMS ({{outbound(sg, node.id).length}})</div>
         <div *ngFor="let f of outbound(sg, node.id)" class="fr">
           <div class="fd" [style.background]="cs(f.criticality)"></div>
           <span class="fp">{{sysName(sg, f.target)}}</span>
