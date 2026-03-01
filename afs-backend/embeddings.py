@@ -85,10 +85,20 @@ for f in raw["flows"]:
     ))
 
 # Business processes
+# Explicitly anchor "business process" in the embed text so queries like
+# "payments business process" or "FX trade lifecycle process" score high.
+# Also include human-readable system names so the embedding picks up
+# domain context (e.g. "payments" from Payments Hub, "risk" from RiskEngine).
 for bp in raw["business_processes"]:
+    sys_names = ", ".join(
+        snames.get(sid, sid) for sid in bp.get("systems_involved", [])
+    )
     text = (
-        f"{bp['name']}. {bp.get('description', '')} "
-        f"Regulatory: {bp.get('regulatory_relevance', '')}."
+        f"{bp['name']} is an enterprise business process. "
+        f"{bp.get('description', '')} "
+        f"This business process spans the following systems: {sys_names}. "
+        f"Regulatory requirements for this business process: "
+        f"{bp.get('regulatory_relevance', '')}."
     )
     documents.append(Document(
         page_content = text,
