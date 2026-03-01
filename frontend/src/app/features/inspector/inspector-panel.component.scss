@@ -61,11 +61,22 @@
 .rl{font-size:8.5px;color:#60a5fa;flex-shrink:0}
 .rv{font-size:8.5px;color:#d2e4f6;text-align:right;word-break:break-word}
 .div{height:1px;background:#264e72;margin:10px 0}
-.sl{font-size:7.5px;letter-spacing:.12em;color:#60a5fa;margin-bottom:6px}
+.sl{font-size:7.5px;letter-spacing:.12em;color:#60a5fa;margin-bottom:6px;display:flex;align-items:center}
 .sl.mt{margin-top:10px}
 .purpose{font-size:9px;color:#b0c6dc;line-height:1.6;margin:0}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
 .tag{padding:2px 7px;border-radius:20px;font-size:8px;background:#0e1830;border:1px solid #2a5070;color:#b0c6dc}
+
+/* ── Flow search bar ────────────────────────────────────────────────────── */
+.fsearch{margin-bottom:8px}
+.fbox{display:flex;align-items:center;gap:5px;background:#0c1626;border:1px solid #2a5070;border-radius:6px;padding:5px 8px;transition:border-color .15s}
+.fbox:focus-within{border-color:#3b82f6}
+.fi{font-size:10px;color:#4e7a9e;flex-shrink:0;line-height:1}
+.finput{flex:1;background:transparent;border:none;outline:none;font-size:9px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
+.finput::placeholder{color:#4e7a9e}
+.fclear{background:none;border:none;color:#4e7a9e;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;transition:color .12s}
+.fclear:hover{color:#d2e4f6}
+.fs-ct{margin-left:4px;font-size:7px;padding:1px 5px;border-radius:8px;background:#1a3050;color:#60a5fa;letter-spacing:0}
 
 /* ── Flow rows ──────────────────────────────────────────────────────────── */
 .fr{display:flex;align-items:center;gap:6px;margin-bottom:5px;padding:5px 7px;border-radius:5px;background:#0c1626;border:1px solid #264e72}

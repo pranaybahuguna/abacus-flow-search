@@ -1,13 +1,14 @@
 // inspector-panel.component.ts — click-to-inspect panel, collapsible to right
 import { Component, inject, HostBinding, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule }      from '@angular/common';
+import { FormsModule }       from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { GraphService }      from '../../core/services/graph.service';
 import { SubgraphResponse }  from '../../core/models/models';
 import { ds, CRIT_STROKE, Flow, SimNode } from '../../core/models/models';
 
 @Component({
-  selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule],
+  selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule, FormsModule],
   templateUrl:'./inspector-panel.component.html',
   styleUrls:  ['./inspector-panel.component.scss'],
 })
@@ -16,7 +17,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   selected$ = this.gs.selected$;
   subgraph$ = this.gs.subgraph$;
 
-  collapsed = signal(false);
+  collapsed   = signal(false);
+  flowSearch  = signal('');        // live filter for upstream/downstream flows
   private destroy = new Subject<void>();
 
   /** Binds .collapsed class to :host so SCSS :host.collapsed transition fires */
@@ -26,12 +28,16 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   toggle() { this.collapsed.update(v => !v); }
 
   ngOnInit() {
-    // Auto-expand whenever the selected entity identity changes (new node / edge clicked)
+    // Auto-expand and reset flow search whenever a new node/edge is selected
     let lastId = '';
     this.gs.selected$.pipe(takeUntil(this.destroy)).subscribe(sel => {
       const id = sel?.kind === 'node' ? (sel.node?.id ?? '') : (sel?.edge?.id ?? '');
-      if (sel && id !== lastId) { this.collapsed.set(false); lastId = id; }
-      if (!sel) lastId = '';
+      if (sel && id !== lastId) {
+        this.collapsed.set(false);
+        if (sel.kind === 'node') this.flowSearch.set(''); // reset search on new node
+        lastId = id;
+      }
+      if (!sel) { lastId = ''; this.flowSearch.set(''); }
     });
   }
 
@@ -68,14 +74,31 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     return Array.from(map.values());
   }
 
-  /** Unique upstream systems — each with aggregated top criticality + all flows */
-  inboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    return this._groupFlows(sg.edges.filter(e => e.target === nodeId), 'source', sg);
+  /** Match a flow against the current flowSearch signal — searches data_entity,
+   *  business_process, protocol and criticality (case-insensitive substring). */
+  private _matchFlow(f: Flow, q: string): boolean {
+    if (!q) return true;
+    const lq = q.toLowerCase();
+    return `${f.data_entity} ${f.business_process} ${f.protocol} ${f.criticality}`
+      .toLowerCase().includes(lq);
   }
 
-  /** Unique downstream systems — each with aggregated top criticality + all flows */
+  /** Unique upstream systems filtered by current flowSearch */
+  inboundGrouped(sg: SubgraphResponse, nodeId: string) {
+    const q = this.flowSearch();
+    return this._groupFlows(
+      sg.edges.filter(e => e.target === nodeId && this._matchFlow(e, q)),
+      'source', sg,
+    );
+  }
+
+  /** Unique downstream systems filtered by current flowSearch */
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    return this._groupFlows(sg.edges.filter(e => e.source === nodeId), 'target', sg);
+    const q = this.flowSearch();
+    return this._groupFlows(
+      sg.edges.filter(e => e.source === nodeId && this._matchFlow(e, q)),
+      'target', sg,
+    );
   }
 
   /** Select a flow from the panel — triggers graph edge highlight + pan-to */
