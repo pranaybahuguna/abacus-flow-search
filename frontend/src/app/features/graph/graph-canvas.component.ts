@@ -299,7 +299,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const e = this._edges.find(e => e.id === edgeId);
     if (!e) return;
     const s = e.source as SimNode, t = e.target as SimNode;
-    if (s.x == null || t.x == null) return;
+    if (s.x == null || s.y == null || t.x == null || t.y == null) return;
     const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2;
     const k  = d3.zoomTransform(this._svgSel.node()!).k;
     const tx = this._vW / 2 - k * mx, ty = this._vH / 2 - k * my;
