@@ -1,3 +1,9 @@
+<!-- Pull tab — always pinned at viewport right edge, collapses/expands the panel -->
+<button class="pull-tab" (click)="toggle()"
+        [title]="collapsed() ? 'Expand inspector' : 'Collapse inspector'">
+  {{ collapsed() ? '‹' : '›' }}
+</button>
+
 <aside class="panel" *ngIf="selected$ | async as sel">
 
   <!-- Header -->
