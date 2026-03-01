@@ -13,6 +13,7 @@
 .mode-toggle{display:flex;gap:3px;background:#060d1e;border:1px solid #264e72;border-radius:7px;padding:3px}
 .mode-toggle button{padding:4px 12px;border-radius:5px;border:none;font-size:9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;cursor:pointer;background:transparent;color:#b0c6dc;transition:all .15s}
 .mode-toggle button.active{background:#0a1e32;color:#aecfff}
+.mode-toggle .exp-btn.active{background:#052016;color:#4ade80}
 .mode-toggle .imp-btn.active{background:#120720;color:#c084fc}
 .mode-toggle .dep-btn.active{background:#071a10;color:#34d399}
 .mode-toggle button:hover:not(.active){color:#b0c4d8}

@@ -7,9 +7,18 @@ import { SearchService }             from '../../core/services/search.service';
 import { GraphService }              from '../../core/services/graph.service';
 import { SearchResponse, SearchCandidate } from '../../core/models/models';
 
-const EXAMPLES = ['cross border payment','trade settlement','AML sanctions',
-  'risk VaR calculation','regulatory reporting','SWIFT wire transfer',
-  'nostro reconciliation','trade finance','Murex trading system'];
+const EXAMPLE_GROUPS = [
+  { label: 'PROCESSES', items: [
+      'cross border payment', 'trade settlement', 'customer onboarding',
+      'trade finance', 'AML sanctions', 'market risk management',
+  ]},
+  { label: 'SYSTEMS', items: [
+      'Murex trading system', 'Payments Hub', 'RiskEngine',
+  ]},
+  { label: 'FLOWS', items: [
+      'SWIFT wire transfer', 'nostro reconciliation',
+  ]},
+];
 
 @Component({
   selector:'abacus-search-panel', standalone:true, imports:[CommonModule,FormsModule],
@@ -27,7 +36,7 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   loading        = signal(false);
   activeId       = signal<string|null>(null);
   tierDismissed  = signal(false);
-  examples       = EXAMPLES;
+  exampleGroups  = EXAMPLE_GROUPS;
 
   TIER = {
     HIGH:   {color:'#22c55e', bg:'rgba(5,46,22,.85)',  icon:'✓', label:'AUTO-RESOLVED'  },

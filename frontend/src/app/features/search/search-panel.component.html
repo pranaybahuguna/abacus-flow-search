@@ -4,18 +4,21 @@
     <div class="box" [class.active]="query()">
       <span class="si">⌕</span>
       <input [ngModel]="query()" (ngModelChange)="onInput($event)"
-             (keydown.enter)="onEnter()" placeholder="Search systems, flows…"
+             (keydown.enter)="onEnter()" placeholder="Search processes, flows &amp; systems…"
              autocomplete="off" spellcheck="false"/>
       <div class="spin" *ngIf="loading()"></div>
     </div>
     <button class="btn-s" (click)="onEnter()" [disabled]="loading()||!query().trim()">SEARCH →</button>
   </div>
 
-  <!-- Quick examples -->
+  <!-- Quick examples — grouped by entity type -->
   <div class="sect">
     <div class="lbl">QUICK QUERIES</div>
-    <div class="chips">
-      <button *ngFor="let ex of examples" class="chip" (click)="useExample(ex)">{{ex}}</button>
+    <div *ngFor="let grp of exampleGroups" class="eg">
+      <div class="eg-lbl">{{grp.label}}</div>
+      <div class="chips">
+        <button *ngFor="let ex of grp.items" class="chip" (click)="useExample(ex)">{{ex}}</button>
+      </div>
     </div>
   </div>
 

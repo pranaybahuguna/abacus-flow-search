@@ -12,7 +12,7 @@
     <div class="dv"></div>
 
     <div class="mode-toggle">
-      <button [class.active]="mode()==='graph'"       (click)="setMode('graph')">◈ EXPLORE</button>
+      <button [class.active]="mode()==='graph'"       (click)="setMode('graph')" class="exp-btn">◈ EXPLORE</button>
       <button [class.active]="mode()==='impact'"      (click)="setMode('impact')"      class="imp-btn">⚡ IMPACT</button>
       <button [class.active]="mode()==='dependency'"  (click)="setMode('dependency')"  class="dep-btn">⬡ DEPENDENCIES</button>
     </div>
