@@ -111,10 +111,10 @@ for bp in raw["business_processes"]:
     ))
 
 # ── Embed and persist into Chroma ──────────────────────────────────────────────
-print(f"Embedding {len(documents)} documents with OpenAI text-embedding-3-small…")
+print(f"Embedding {len(documents)} documents with OpenAI text-embedding-3-large…")
 
 embeddings = OpenAIEmbeddings(
-    model   = "text-embedding-3-small",   # 1536-dim, cheap and accurate
+    model   = "text-embedding-3-large",   # 3072-dim, highest accuracy
     # api_key is read from OPENAI_API_KEY env var automatically
 )
 
