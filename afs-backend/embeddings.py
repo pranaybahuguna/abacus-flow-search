@@ -114,7 +114,8 @@ for bp in raw["business_processes"]:
 print(f"Embedding {len(documents)} documents with OpenAI text-embedding-3-large…")
 
 embeddings = OpenAIEmbeddings(
-    model   = "text-embedding-3-large",   # 3072-dim, highest accuracy
+    model      = "text-embedding-3-large",
+    dimensions = 1024,   # Matryoshka truncation — best quality/cost balance
     # api_key is read from OPENAI_API_KEY env var automatically
 )
 

@@ -66,7 +66,8 @@ class VectorSearch:
 
     def __init__(self):
         self._embeddings = OpenAIEmbeddings(
-            model = "text-embedding-3-large",
+            model      = "text-embedding-3-large",
+            dimensions = 1024,   # Matryoshka truncation — matches embeddings.py
             # OPENAI_API_KEY read from environment automatically
         )
         self._store = Chroma(
