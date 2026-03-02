@@ -85,23 +85,18 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
       this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
         if (c.entity_type === 'business_process') {
           // Use c.name directly — the BP's own label from the search result.
-          // Do NOT read sg.edges[0].business_process: each flow carries its own
-          // *primary* process label which may differ from the BP being browsed
-          // (e.g. FLOW_005 in "Cross-Border Payment" carries "Retail Payment").
-          // Filter by flow ID membership instead (contextBpFlowIds).
+          // Inspector will filter flows by e.business_process === contextBp,
+          // showing only flows that truly belong to this business process.
           this.gs.contextBp.set(c.name);
-          this.gs.contextBpFlowIds.set(new Set(sg.edges.map(e => e.id)));
         } else if (c.entity_type === 'flow') {
-          // For a single flow pick, filter by its business_process name field
           const edge = sg.edges.find(e => e.id === c.entity_id);
           this.gs.contextBp.set(edge?.business_process ?? null);
-          this.gs.contextBpFlowIds.set(null); // name-string filter is fine for single flows
         }
       });
     }
   }
 
-  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.contextBpFlowIds.set(null); this.gs.loadFull().subscribe(); }
+  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.loadFull().subscribe(); }
 
   scoreColor(s:number) { return s>=0.82?'#22c55e':s>=0.65?'#f59e0b':'#ef4444'; }
   track(_:number, c:SearchCandidate) { return c.entity_id; }

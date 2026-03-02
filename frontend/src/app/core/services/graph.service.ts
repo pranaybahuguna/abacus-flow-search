@@ -21,19 +21,8 @@ export class GraphService {
   readonly mode      = signal<AppMode>('graph');
   setMode(m: AppMode) { this.mode.set(m); }
 
-  /** Business-process name to scope the inspector panel to (display label). null = show all flows. */
+  /** Business-process name to scope the inspector panel to. null = show all flows. */
   readonly contextBp = signal<string | null>(null);
-
-  /**
-   * When a BP entity is picked, this holds the exact set of flow IDs that
-   * belong to that BP (from bp.flows_involved). Filtering by ID is correct
-   * because a flow's own `business_process` field only stores its PRIMARY
-   * process — one flow can participate in many BPs under different primary labels.
-   *
-   * null = filter by contextBp name string (used for single-flow picks)
-   *        OR no context at all (contextBp is also null).
-   */
-  readonly contextBpFlowIds = signal<Set<string> | null>(null);
 
   /**
    * Cached subgraph from the most recent pick() call.
@@ -61,5 +50,5 @@ export class GraphService {
 
   selectNode(node:SimNode)  { this._sel.next({kind:'node',node}); }
   selectEdge(edge:SimEdge)  { this._sel.next({kind:'edge',edge}); }
-  clearSelection()          { this._sel.next(null); this.inspectorSgCache.set(null); this.contextBpFlowIds.set(null); }
+  clearSelection()          { this._sel.next(null); this.inspectorSgCache.set(null); }
 }
