@@ -13,7 +13,7 @@
 
   <!-- Quick examples — collapsible -->
   <div class="sect" [class.sect-collapsed]="quickCollapsed()">
-    <button class="lbl lbl-toggle" (click)="quickCollapsed.update(v => !v)">
+    <button class="lbl lbl-toggle" (click)="toggleQuickQueries()">
       QUICK QUERIES
       <span class="lbl-chevron">{{quickCollapsed() ? '›' : '‹'}}</span>
     </button>

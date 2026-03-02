@@ -66,7 +66,8 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  dismissTier() { this.tierDismissed.set(true); }
+  dismissTier()        { this.tierDismissed.set(true); }
+  toggleQuickQueries() { this.quickCollapsed.update(v => !v); }
 
   pick(c:SearchCandidate) {
     this.activeId.set(c.entity_id);
