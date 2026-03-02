@@ -144,7 +144,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   clearBpContext() {
     this.gs.contextBp.set(null);
     const sel = this.gs.selectionValue;
-    if (sel?.kind === 'node') {
+    if (sel?.kind === 'node' && sel.node) {
       const node = sel.node;
       // Reload the canvas with the full system subgraph (not the BP-scoped one),
       // then re-select the node so the inspector stays open.
