@@ -126,13 +126,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
   /**
-   * Synchronous substring scan of the current node's flows.
-   * Returns a Map<flowId, 1.0> if any flows match, or null if none do.
+   * Synchronous exact-phrase scan of the current node's flows.
+   * Returns a Map<flowId, 1.0> if any flows contain the full query string,
+   * or null if none do (triggering the semantic fallback).
    *
-   * Two-pass matching so multi-word queries like "trade related" still hit:
-   *   Pass 1 — full phrase ("trade related" as a substring)
-   *   Pass 2 — any individual word ≥ 3 chars ("trade" OR "related")
-   * Both passes use score = 1.0 ("EXACT") since they are literal keyword hits.
+   * Intentionally strict — only whole-phrase hits are treated as EXACT.
+   * Multi-word conceptual queries ("Derivatives Lifecycle Management",
+   * "trade related") fall through to semantic search, which is better
+   * suited to finding them than loose word splitting.
    */
   private _substringMatches(q: string, nodeId: string): Map<string, number> | null {
     if (!this._currentSg || !nodeId) return null;
@@ -140,19 +141,10 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     if (!lq) return null;
 
     const result = new Map<string, number>();
-    const words  = lq.split(/\s+/).filter(w => w.length >= 3); // skip tiny words
-
     this._currentSg.edges.forEach(e => {
       if (e.source !== nodeId && e.target !== nodeId) return;
       const haystack = `${e.data_entity ?? ''} ${e.business_process ?? ''} ${e.protocol ?? ''} ${e.criticality ?? ''}`.toLowerCase();
-
-      if (haystack.includes(lq)) {
-        // Full phrase match
-        result.set(e.id, 1.0);
-      } else if (words.length > 1 && words.some(w => haystack.includes(w))) {
-        // At least one meaningful word matches — still a keyword hit
-        result.set(e.id, 1.0);
-      }
+      if (haystack.includes(lq)) result.set(e.id, 1.0);
     });
     return result.size > 0 ? result : null;
   }
