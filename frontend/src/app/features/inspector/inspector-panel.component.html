@@ -49,6 +49,15 @@
 
       <!-- ── Flow search bar — outside subgraph$ so it always renders ── -->
       <div class="div"></div>
+      <div class="sl">FLOWS</div>
+
+      <!-- BP context chip — above search, clearly labelled as a business process -->
+      <div class="bp-ctx" *ngIf="gs.contextBp()">
+        <span class="bp-ctx-type">BP</span>
+        <span class="bp-ctx-icon">◈</span>
+        <span class="bp-ctx-name">{{gs.contextBp()}}</span>
+        <button class="bp-ctx-clear" (click)="clearBpContext()" title="Show all flows">×</button>
+      </div>
 
       <div class="fsearch">
         <div class="fbox">
@@ -62,16 +71,6 @@
           <button class="fclear" *ngIf="flowSearch() && !searching()"
                   (click)="clearSearch()" title="Clear search">×</button>
         </div>
-      </div>
-
-      <div class="sl">
-        FLOWS
-        <!-- BP context chip — inline beside the FLOWS label -->
-        <span class="bp-ctx" *ngIf="gs.contextBp()">
-          <span class="bp-ctx-icon">◈</span>
-          <span class="bp-ctx-name">{{gs.contextBp()}}</span>
-          <button class="bp-ctx-clear" (click)="clearBpContext()" title="Show all flows">×</button>
-        </span>
       </div>
 
       <!-- Flows: always the node's own 1-hop neighbourhood, not the canvas view -->
