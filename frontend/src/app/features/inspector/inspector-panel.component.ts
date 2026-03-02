@@ -132,6 +132,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   ds(domain: string) { return ds(domain); }
   cs(crit:  string)  { return CRIT_STROKE[crit] ?? '#6b7280'; }
 
+  clearBpContext() { this.gs.contextBp.set(null); }
+
   /** Returns the similarity score (0–1) for a flow, or null when no search is active. */
   getScore(flowId: string): number | null {
     const m = this.flowMatchIds();
@@ -179,9 +181,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
+    const bpFilter = this.gs.contextBp();
     return this._groupFlows(
       sg.edges.filter(e => {
         if (e.target !== nodeId) return false;
+        if (bpFilter !== null && e.business_process !== bpFilter) return false;
         if (matchIds === null)   return true;
         return matchIds.has(e.id);
       }),
@@ -191,9 +195,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
+    const bpFilter = this.gs.contextBp();
     return this._groupFlows(
       sg.edges.filter(e => {
         if (e.source !== nodeId) return false;
+        if (bpFilter !== null && e.business_process !== bpFilter) return false;
         if (matchIds === null)   return true;
         return matchIds.has(e.id);
       }),

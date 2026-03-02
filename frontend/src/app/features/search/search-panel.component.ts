@@ -69,15 +69,31 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
 
   pick(c:SearchCandidate) {
     this.activeId.set(c.entity_id);
-    this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
-      if (c.entity_type === 'system') {
+    if (c.entity_type === 'system') {
+      // System click: clear BP context → show all flows in inspector
+      this.gs.contextBp.set(null);
+      this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
         const node = sg.nodes.find(n => n.id === c.entity_id);
         if (node) this.gs.selectNode(node as SimNode);
-      }
-    });
+      });
+    } else {
+      // BP or Flow click: set BP context so inspector filters to that process
+      this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
+        let bpName: string | null = null;
+        if (c.entity_type === 'business_process') {
+          // All edges in the BP subgraph share the same business_process name
+          bpName = sg.edges[0]?.business_process ?? c.name;
+        } else if (c.entity_type === 'flow') {
+          // Find the flow edge and read its BP
+          const edge = sg.edges.find(e => e.id === c.entity_id);
+          bpName = edge?.business_process ?? null;
+        }
+        this.gs.contextBp.set(bpName);
+      });
+    }
   }
 
-  loadFull() { this.activeId.set('__full__'); this.gs.loadFull().subscribe(); }
+  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.loadFull().subscribe(); }
 
   scoreColor(s:number) { return s>=0.82?'#22c55e':s>=0.65?'#f59e0b':'#ef4444'; }
   track(_:number, c:SearchCandidate) { return c.entity_id; }

@@ -18,8 +18,11 @@ export class GraphService {
   readonly selected$  = this._sel.asObservable();
   get selectionValue(){ return this._sel.value; }
 
-  readonly mode = signal<AppMode>('graph');
+  readonly mode      = signal<AppMode>('graph');
   setMode(m: AppMode) { this.mode.set(m); }
+
+  /** Business-process name to scope the inspector panel to. null = show all flows. */
+  readonly contextBp = signal<string | null>(null);
 
   loadSubgraph(entityId:string, entityType:EntityType) {
     this._l.next(true);
