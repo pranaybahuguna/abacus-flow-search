@@ -50,16 +50,17 @@
           <span class="fi">⌕</span>
           <input class="finput"
                  [value]="flowSearch()"
-                 (input)="flowSearch.set($any($event.target).value)"
+                 (input)="onSearchInput($any($event.target).value)"
                  placeholder="search flows & processes…"
                  autocomplete="off" spellcheck="false"/>
-          <button class="fclear" *ngIf="flowSearch()"
-                  (click)="flowSearch.set('')" title="Clear search">×</button>
+          <span class="fspinner" *ngIf="searching()"></span>
+          <button class="fclear" *ngIf="flowSearch() && !searching()"
+                  (click)="clearSearch()" title="Clear search">×</button>
         </div>
       </div>
 
-      <!-- Flows from current subgraph — grouped by system -->
-      <ng-container *ngIf="subgraph$ | async as sg">
+      <!-- Flows: always the node's own 1-hop neighbourhood, not the canvas view -->
+      <ng-container *ngIf="inspectorSg$ | async as sg">
 
         <!-- ── UPSTREAM ─────────────────────────────────────────────── -->
         <ng-container *ngIf="inboundGrouped(sg, node.id) as inGroups">
@@ -68,7 +69,7 @@
             <span class="fs-ct">{{inGroups.length}}</span>
           </div>
           <div class="empty-flows" *ngIf="inGroups.length === 0">
-            {{flowSearch() ? 'no match for "' + flowSearch() + '"' : 'no upstream'}}
+            {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no upstream'}}
           </div>
           <div *ngFor="let grp of inGroups" class="fg">
             <div class="fg-row">
@@ -95,7 +96,7 @@
             <span class="fs-ct">{{outGroups.length}}</span>
           </div>
           <div class="empty-flows" *ngIf="outGroups.length === 0">
-            {{flowSearch() ? 'no match for "' + flowSearch() + '"' : 'no downstream'}}
+            {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no downstream'}}
           </div>
           <div *ngFor="let grp of outGroups" class="fg">
             <div class="fg-row">

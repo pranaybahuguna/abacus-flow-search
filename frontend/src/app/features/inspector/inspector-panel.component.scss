@@ -76,6 +76,8 @@
 .finput::placeholder{color:#6090b8}
 .fclear{background:none;border:none;color:#6090b8;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0;transition:color .12s}
 .fclear:hover{color:#e2ecf8}
+.fspinner{width:11px;height:11px;border:1.5px solid #2a5a82;border-top-color:#60a5fa;border-radius:50%;flex-shrink:0;animation:fspin .65s linear infinite}
+@keyframes fspin{to{transform:rotate(360deg)}}
 .fs-ct{margin-left:4px;font-size:7px;padding:1px 5px;border-radius:8px;background:#1a3050;color:#60a5fa;letter-spacing:0}
 
 /* ── Flow rows ──────────────────────────────────────────────────────────── */
