@@ -156,7 +156,7 @@ export const CRIT_WIDTH: Record<string, number>  = {
   Critical:3, High:2, Medium:1.5, Low:1,
 };
 export const CRIT_DASH: Record<string, string|null> = {
-  Critical:null, High:null, Medium:'6,4', Low:'3,6',
+  Critical:null, High:null, Medium:null, Low:'3,6',
 };
 
 export const SEVERITY_COLOR: Record<Severity,string> = {

@@ -32,7 +32,7 @@
           <line x1="0" y1="3" x2="18" y2="3"
             [attr.stroke]="e[1]"
             [attr.stroke-width]="e[0]==='Critical'?3:e[0]==='High'?2:1.5"
-            [attr.stroke-dasharray]="e[0]==='Medium'?'6,4':e[0]==='Low'?'3,6':null"/>
+            [attr.stroke-dasharray]="e[0]==='Low'?'3,6':null"/>
         </svg>
         <span>{{e[0]}}</span>
       </div>
