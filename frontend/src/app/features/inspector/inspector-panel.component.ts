@@ -42,9 +42,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     shareReplay(1),
   );
 
-  /** Latest emitted value of inspectorSg$ — kept in sync for synchronous substring checks. */
-  private _currentSg: SubgraphResponse | null = null;
-
   private destroy$     = new Subject<void>();
   private searchInput$ = new Subject<string>();
 
@@ -54,11 +51,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   toggle() { this.collapsed.update(v => !v); }
 
   ngOnInit() {
-    // Keep _currentSg in sync so substring matching is always up to date
-    this.inspectorSg$.pipe(takeUntil(this.destroy$)).subscribe(sg => {
-      this._currentSg = sg;
-    });
-
     // Track current node ID; reset search state on new node selection
     let lastId = '';
     this.gs.selected$.pipe(takeUntil(this.destroy$)).subscribe(sel => {
@@ -83,7 +75,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Debounced semantic fallback — only fires when no substring matches exist
+    // Debounced semantic search — fires on every non-empty query after 350 ms idle
     this.searchInput$.pipe(
       debounceTime(350),
       distinctUntilChanged(),
@@ -95,12 +87,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         }
         const nodeId = this.currentNodeId();
         if (!nodeId) { this.searching.set(false); return EMPTY; }
-
-        // Re-check at debounce-fire time: exact match may have appeared while waiting
-        if (this._substringMatches(q, nodeId) !== null) {
-          this.searching.set(false);
-          return EMPTY; // Already showing exact results — skip HTTP call
-        }
 
         this.searching.set(true);
         return this.http.get<{ results: { flow_id: string; score: number }[] }>('/api/inspector/flows', {
@@ -125,61 +111,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
-  /**
-   * Synchronous exact-phrase scan of the current node's flows.
-   * Returns a Map<flowId, 1.0> if any flows contain the full query string,
-   * or null if none do (triggering the semantic fallback).
-   *
-   * Intentionally strict — only whole-phrase hits are treated as EXACT.
-   * Multi-word conceptual queries ("Derivatives Lifecycle Management",
-   * "trade related") fall through to semantic search, which is better
-   * suited to finding them than loose word splitting.
-   */
-  private _substringMatches(q: string, nodeId: string): Map<string, number> | null {
-    if (!this._currentSg || !nodeId) return null;
-    const lq = q.toLowerCase().trim();
-    if (!lq) return null;
-
-    const result = new Map<string, number>();
-    this._currentSg.edges.forEach(e => {
-      if (e.source !== nodeId && e.target !== nodeId) return;
-      const haystack = `${e.data_entity ?? ''} ${e.business_process ?? ''} ${e.protocol ?? ''} ${e.criticality ?? ''}`.toLowerCase();
-      if (haystack.includes(lq)) result.set(e.id, 1.0);
-    });
-    return result.size > 0 ? result : null;
-  }
-
-  /**
-   * Called by the search input on every keystroke.
-   *
-   * Strategy:
-   *  1. Instant substring scan — if any flow literally contains the query,
-   *     show those results immediately (score = 1.0 / "EXACT"), no API wait.
-   *  2. If zero exact matches, push to searchInput$ → debounced semantic
-   *     search via ChromaDB embeddings fires after 350 ms.
-   *
-   * The debounced pipeline re-checks for exact matches at fire-time, so
-   * it never overwrites an already-displayed exact result with semantic scores.
-   */
+  /** Called by the search input on every keystroke — pushes to debounced semantic pipeline. */
   onSearchInput(v: string) {
     this.flowSearch.set(v);
-
     if (!v.trim()) {
       this.clearSearch();
       return;
     }
-
-    const nodeId = this.currentNodeId();
-    const exact  = this._substringMatches(v, nodeId);
-
-    if (exact !== null) {
-      // Exact/literal match found — show instantly, no spinner
-      this.flowMatchIds.set(exact);
-      this.searching.set(false);
-    }
-    // Always push to the debounced pipeline:
-    //   • If exact !== null  → the pipeline will re-check and bail (EMPTY)
-    //   • If exact === null  → the pipeline will fire the semantic HTTP call
+    this.searching.set(true); // show spinner immediately while waiting for debounce
     this.searchInput$.next(v);
   }
 
@@ -208,9 +147,9 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     return '#94a3b8';
   }
 
-  /** "EXACT" for substring hits (score = 1.0), percentage label otherwise. */
+  /** Percentage confidence label for semantic search results. */
   scoreLabel(score: number): string {
-    return score === 1.0 ? 'EXACT' : `${Math.round(score * 100)}%`;
+    return `${Math.round(score * 100)}%`;
   }
 
   // ── Grouped flow helpers ─────────────────────────────────────────────────

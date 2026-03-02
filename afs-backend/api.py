@@ -285,60 +285,39 @@ def get_flows_subgraph(
 
 @app.get("/api/inspector/flows")
 def inspector_flow_search(
-    q:         str   = Query(..., description="Semantic query for flows"),
-    node_id:   str   = Query(..., description="System node ID to scope results to"),
-    top_k:     int   = Query(50, ge=1, le=50),
-    min_score: float = Query(0.20, ge=0.0, le=1.0),
+    q:       str = Query(..., description="Business process or flow description to search"),
+    node_id: str = Query(..., description="System node ID to scope results to"),
+    top_k:   int = Query(50, ge=1, le=50),
 ):
     """
-    Semantic flow search scoped to a single node's 1-hop neighbourhood.
-    Used by the inspector panel search bar — returns ranked flow IDs only.
+    Pure semantic flow search scoped to a node's direct connections.
 
-    Strategy (two-pass, union):
-      1. Vector similarity search — low threshold (0.20) catches semantic
-         matches that LangChain/Chroma L2→cosine conversions score modestly.
-      2. Substring fallback — any flow whose data_entity / business_process /
-         protocol / description literally contains the query is always included,
-         regardless of cosine score (catches obvious keyword hits like
-         typing "settlement" when the flow is "Settlement Payment Instruction").
+    Embeds the query, runs vector similarity across all flows in ChromaDB,
+    then keeps only the flows that belong to this node's 1-hop neighbourhood.
+    Results are returned ranked by similarity score (highest first) with no
+    hard cutoff — the UI shows the % confidence so the user can judge.
+
+    Works well for:
+      - Business process names  ("Cross Border Payment", "Trade Settlement")
+      - Flow descriptions       ("FX confirmation", "derivatives lifecycle")
+      - Protocol / criticality  ("SWIFT", "Critical")
     """
-    # 1. Collect this node's flows (id → edge attrs) from the graph
-    node_sg    = _graph.subgraph_for_system(node_id)
-    node_edges = {e["id"]: e for e in node_sg.get("edges", []) if e.get("id")}
-    if not node_edges:
-        return {"flow_ids": []}
+    # 1. Get all flow IDs that belong to this node
+    node_sg      = _graph.subgraph_for_system(node_id)
+    node_flow_ids = {e["id"] for e in node_sg.get("edges", []) if e.get("id")}
+    if not node_flow_ids:
+        return {"results": []}
 
-    # 2. Vector similarity search across all flows (high top_k, low threshold)
+    # 2. Semantic similarity search across ALL flows in the vector store
     r = _vsearch.search(q, entity_type="flow", top_k=top_k)
-    # list of (flow_id, score) tuples, ranked by score descending
-    matched: list[tuple[str, float]] = [
-        (c.entity_id, round(c.score, 3))
-        for c in r.candidates
-        if c.score >= min_score and c.entity_id in node_edges
+
+    # 3. Keep only flows that belong to this node, preserve ranking order
+    results = [
+        {"flow_id": c.entity_id, "score": round(c.score, 3)}
+        for c in r.candidates          # already sorted best-first by ChromaDB
+        if c.entity_id in node_flow_ids
     ]
-    matched_ids = {fid for fid, _ in matched}
-
-    # 3. Substring fallback — exact phrase only.
-    #    Multi-word conceptual queries are better served by the vector search
-    #    above; loose word splitting produces too many false positives.
-    lq = q.strip().lower()
-    if lq:
-        for flow_id, e in node_edges.items():
-            if flow_id in matched_ids:
-                continue
-            haystack = " ".join(str(e.get(f, "")) for f in (
-                "data_entity", "business_process", "protocol",
-                "criticality", "description",
-            )).lower()
-            if lq in haystack:
-                matched.append((flow_id, 1.0))
-
-    return {
-        "results": [
-            {"flow_id": fid, "score": score}
-            for fid, score in matched
-        ]
-    }
+    return {"results": results}
 
 
 @app.get("/api/dependencies")
