@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: abacus-flow-search
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free                  # upgrade to starter for no sleep
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false             # set manually in Render dashboard
+      - key: PORT
+        value: "8080"
+      - key: STATIC_DIR
+        value: "/app/static"
+      - key: CORS_ORIGINS
+        value: "*"

@@ -21,13 +21,16 @@ Run:
 """
 from __future__ import annotations
 from typing import Literal, Optional
+import os
 
 from dotenv import load_dotenv
 load_dotenv()  # loads OPENAI_API_KEY (and any other vars) from backend/.env
 
-from fastapi             import FastAPI, Query, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic            import BaseModel
+from fastapi                  import FastAPI, Query, HTTPException
+from fastapi.middleware.cors  import CORSMiddleware
+from fastapi.staticfiles      import StaticFiles
+from fastapi.responses        import FileResponse
+from pydantic                 import BaseModel
 
 from graph_store   import GraphStore
 from vector_search import VectorSearch     # self-contained — no model arg needed
@@ -94,8 +97,12 @@ def _candidate_out(c) -> CandidateOut:
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Abacus API", version="3.0.0")
+
+# In production (STATIC_DIR set) the app is same-origin — no CORS needed.
+# In dev, allow the ng serve port.
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:4200").split(",")
 app.add_middleware(CORSMiddleware,
-                   allow_origins=["http://localhost:4200"],
+                   allow_origins=_cors_origins,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
@@ -534,6 +541,19 @@ def get_system(sid: str):
     if not s:
         raise HTTPException(404, f"System '{sid}' not found")
     return _sys(s)
+
+
+# ── Static SPA serving (production only) ─────────────────────────────────────
+# When STATIC_DIR is set (Docker/cloud), serve Angular build and fall back to
+# index.html for all non-API paths so Angular routing works correctly.
+_static_dir = os.environ.get("STATIC_DIR", "")
+if _static_dir and os.path.isdir(_static_dir):
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        file_path = os.path.join(_static_dir, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(_static_dir, "index.html"))
 
 
 if __name__ == "__main__":

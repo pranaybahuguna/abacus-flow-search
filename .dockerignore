@@ -1,0 +1,26 @@
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Python
+afs-backend/__pycache__/
+afs-backend/**/__pycache__/
+afs-backend/*.pyc
+afs-backend/**/*.pyc
+
+# Generated at runtime — never bake into image
+afs-backend/chroma_db/
+afs-backend/graph.pkl
+
+# Secrets — must be passed as env vars, never baked in
+afs-backend/.env
+.env
+
+# Git / editor
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Docs
+*.md
