@@ -13,6 +13,11 @@
         <div class="ml" [style.color]="ds(node.domain).accent">{{node.domain.toUpperCase()}}</div>
         <div class="mn">{{node.name}}</div>
         <div class="mid">{{node.id}}</div>
+        <div class="vm">
+          <span class="vm-badge" [class.vm-bp]="gs.contextBp()">
+            {{gs.contextBp() ? '◈ BP VIEW' : '◈ SYSTEM VIEW'}}
+          </span>
+        </div>
       }
       @if (sel.kind==='edge' && sel.edge; as edge) {
         <div class="ml" [style.color]="cs(edge.criticality)">{{edge.criticality.toUpperCase()}} FLOW</div>
