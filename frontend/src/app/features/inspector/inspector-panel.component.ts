@@ -221,4 +221,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const targetNode = sg.nodes.find(n => n.id === flow.target) as SimNode | undefined;
     this.gs.selectEdge({ ...flow, sourceNode, targetNode });
   }
+
+  trackGroup(_: number, grp: { sysId: string }): string { return grp.sysId; }
+  trackFlow(_: number, f: Flow): string { return f.id; }
 }

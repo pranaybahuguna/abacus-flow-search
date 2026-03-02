@@ -84,7 +84,7 @@
           <div class="empty-flows" *ngIf="inGroups.length === 0">
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no upstream'}}
           </div>
-          <div *ngFor="let grp of inGroups" class="fg">
+          <div *ngFor="let grp of inGroups; trackBy: trackGroup" class="fg">
             <div class="fg-row">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
@@ -92,7 +92,7 @@
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
             </div>
             <div class="fg-flows">
-              <div *ngFor="let f of grp.flows" class="fg-flow"
+              <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
@@ -116,7 +116,7 @@
           <div class="empty-flows" *ngIf="outGroups.length === 0">
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no downstream'}}
           </div>
-          <div *ngFor="let grp of outGroups" class="fg">
+          <div *ngFor="let grp of outGroups; trackBy: trackGroup" class="fg">
             <div class="fg-row">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
@@ -124,7 +124,7 @@
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
             </div>
             <div class="fg-flows">
-              <div *ngFor="let f of grp.flows" class="fg-flow"
+              <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
