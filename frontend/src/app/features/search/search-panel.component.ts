@@ -83,21 +83,25 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
     } else {
       // BP or Flow click: set BP context so inspector filters to that process
       this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
-        let bpName: string | null = null;
         if (c.entity_type === 'business_process') {
-          // All edges in the BP subgraph share the same business_process name
-          bpName = sg.edges[0]?.business_process ?? c.name;
+          // Use c.name directly — the BP's own label from the search result.
+          // Do NOT read sg.edges[0].business_process: each flow carries its own
+          // *primary* process label which may differ from the BP being browsed
+          // (e.g. FLOW_005 in "Cross-Border Payment" carries "Retail Payment").
+          // Filter by flow ID membership instead (contextBpFlowIds).
+          this.gs.contextBp.set(c.name);
+          this.gs.contextBpFlowIds.set(new Set(sg.edges.map(e => e.id)));
         } else if (c.entity_type === 'flow') {
-          // Find the flow edge and read its BP
+          // For a single flow pick, filter by its business_process name field
           const edge = sg.edges.find(e => e.id === c.entity_id);
-          bpName = edge?.business_process ?? null;
+          this.gs.contextBp.set(edge?.business_process ?? null);
+          this.gs.contextBpFlowIds.set(null); // name-string filter is fine for single flows
         }
-        this.gs.contextBp.set(bpName);
       });
     }
   }
 
-  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.loadFull().subscribe(); }
+  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.contextBpFlowIds.set(null); this.gs.loadFull().subscribe(); }
 
   scoreColor(s:number) { return s>=0.82?'#22c55e':s>=0.65?'#f59e0b':'#ef4444'; }
   track(_:number, c:SearchCandidate) { return c.entity_id; }

@@ -141,7 +141,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   ds(domain: string) { return ds(domain); }
   cs(crit:  string)  { return CRIT_STROKE[crit] ?? '#6b7280'; }
 
-  clearBpContext() { this.gs.contextBp.set(null); }
+  clearBpContext() { this.gs.contextBp.set(null); this.gs.contextBpFlowIds.set(null); }
 
   /** Returns the similarity score (0–1) for a flow, or null when no search is active. */
   getScore(flowId: string): number | null {
@@ -189,13 +189,20 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    const matchIds   = this.flowMatchIds();
+    const bpFilter   = this.gs.contextBp();
+    const bpFlowIds  = this.gs.contextBpFlowIds();
     return this._groupFlows(
       sg.edges.filter(e => {
         if (e.target !== nodeId) return false;
-        if (bpFilter !== null && e.business_process !== bpFilter) return false;
-        if (matchIds === null)   return true;
+        if (bpFilter !== null) {
+          // BP entity was picked: filter by the exact set of flow IDs in that BP.
+          // A flow's own `business_process` field stores its primary process only,
+          // so it may not match the selected BP name even when it belongs to it.
+          if (bpFlowIds !== null) { if (!bpFlowIds.has(e.id)) return false; }
+          else                    { if (e.business_process !== bpFilter) return false; }
+        }
+        if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),
       'source', sg,
@@ -203,13 +210,17 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    const matchIds   = this.flowMatchIds();
+    const bpFilter   = this.gs.contextBp();
+    const bpFlowIds  = this.gs.contextBpFlowIds();
     return this._groupFlows(
       sg.edges.filter(e => {
         if (e.source !== nodeId) return false;
-        if (bpFilter !== null && e.business_process !== bpFilter) return false;
-        if (matchIds === null)   return true;
+        if (bpFilter !== null) {
+          if (bpFlowIds !== null) { if (!bpFlowIds.has(e.id)) return false; }
+          else                    { if (e.business_process !== bpFilter) return false; }
+        }
+        if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),
       'target', sg,
