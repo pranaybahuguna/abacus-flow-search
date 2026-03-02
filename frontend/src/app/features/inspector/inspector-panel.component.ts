@@ -128,16 +128,31 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   /**
    * Synchronous substring scan of the current node's flows.
    * Returns a Map<flowId, 1.0> if any flows match, or null if none do.
-   * Checks data_entity, business_process, protocol and criticality.
+   *
+   * Two-pass matching so multi-word queries like "trade related" still hit:
+   *   Pass 1 — full phrase ("trade related" as a substring)
+   *   Pass 2 — any individual word ≥ 3 chars ("trade" OR "related")
+   * Both passes use score = 1.0 ("EXACT") since they are literal keyword hits.
    */
   private _substringMatches(q: string, nodeId: string): Map<string, number> | null {
     if (!this._currentSg || !nodeId) return null;
-    const lq = q.toLowerCase();
+    const lq = q.toLowerCase().trim();
+    if (!lq) return null;
+
     const result = new Map<string, number>();
+    const words  = lq.split(/\s+/).filter(w => w.length >= 3); // skip tiny words
+
     this._currentSg.edges.forEach(e => {
       if (e.source !== nodeId && e.target !== nodeId) return;
       const haystack = `${e.data_entity ?? ''} ${e.business_process ?? ''} ${e.protocol ?? ''} ${e.criticality ?? ''}`.toLowerCase();
-      if (haystack.includes(lq)) result.set(e.id, 1.0);
+
+      if (haystack.includes(lq)) {
+        // Full phrase match
+        result.set(e.id, 1.0);
+      } else if (words.length > 1 && words.some(w => haystack.includes(w))) {
+        // At least one meaningful word matches — still a keyword hit
+        result.set(e.id, 1.0);
+      }
     });
     return result.size > 0 ? result : null;
   }

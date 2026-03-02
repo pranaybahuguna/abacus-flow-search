@@ -318,9 +318,11 @@ def inspector_flow_search(
     ]
     matched_ids = {fid for fid, _ in matched}
 
-    # 3. Substring fallback — always surface literal keyword matches
-    #    These get score=1.0 to indicate an exact/literal hit
-    lq = q.strip().lower()
+    # 3. Substring fallback — full phrase first, then any individual word ≥ 3 chars.
+    #    Handles multi-word queries like "trade related" → "trade" hits flows.
+    #    These get score=1.0 to indicate a literal/keyword hit.
+    lq    = q.strip().lower()
+    words = [w for w in lq.split() if len(w) >= 3]
     if lq:
         for flow_id, e in node_edges.items():
             if flow_id in matched_ids:
@@ -329,7 +331,7 @@ def inspector_flow_search(
                 "data_entity", "business_process", "protocol",
                 "criticality", "description",
             )).lower()
-            if lq in haystack:
+            if lq in haystack or (len(words) > 1 and any(w in haystack for w in words)):
                 matched.append((flow_id, 1.0))
 
     return {
