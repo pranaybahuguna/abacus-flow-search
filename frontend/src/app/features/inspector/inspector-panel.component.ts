@@ -29,8 +29,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   /**
    * Inspector-specific subgraph: always the selected node's full 1-hop
    * neighbourhood, fetched independently of the canvas view.
-   * Works correctly whether the canvas is showing a business-process
-   * subgraph, a full map, an impact view, etc.
    */
   readonly inspectorSg$ = this.gs.selected$.pipe(
     map(sel => (sel?.kind === 'node' ? sel.node : null)),
@@ -44,6 +42,9 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     shareReplay(1),
   );
 
+  /** Latest emitted value of inspectorSg$ — kept in sync for synchronous substring checks. */
+  private _currentSg: SubgraphResponse | null = null;
+
   private destroy$     = new Subject<void>();
   private searchInput$ = new Subject<string>();
 
@@ -53,6 +54,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   toggle() { this.collapsed.update(v => !v); }
 
   ngOnInit() {
+    // Keep _currentSg in sync so substring matching is always up to date
+    this.inspectorSg$.pipe(takeUntil(this.destroy$)).subscribe(sg => {
+      this._currentSg = sg;
+    });
+
     // Track current node ID; reset search state on new node selection
     let lastId = '';
     this.gs.selected$.pipe(takeUntil(this.destroy$)).subscribe(sel => {
@@ -77,7 +83,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Debounced semantic similarity search via ChromaDB embeddings
+    // Debounced semantic fallback — only fires when no substring matches exist
     this.searchInput$.pipe(
       debounceTime(350),
       distinctUntilChanged(),
@@ -89,6 +95,13 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         }
         const nodeId = this.currentNodeId();
         if (!nodeId) { this.searching.set(false); return EMPTY; }
+
+        // Re-check at debounce-fire time: exact match may have appeared while waiting
+        if (this._substringMatches(q, nodeId) !== null) {
+          this.searching.set(false);
+          return EMPTY; // Already showing exact results — skip HTTP call
+        }
+
         this.searching.set(true);
         return this.http.get<{ results: { flow_id: string; score: number }[] }>('/api/inspector/flows', {
           params: { q, node_id: nodeId },
@@ -100,7 +113,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
             this.searching.set(false);
           }),
           catchError(() => {
-            // On error fall back to showing everything
             this.searching.set(false);
             this.flowMatchIds.set(null);
             return EMPTY;
@@ -113,9 +125,54 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
-  /** Called by the search input — updates display text AND triggers API call */
+  /**
+   * Synchronous substring scan of the current node's flows.
+   * Returns a Map<flowId, 1.0> if any flows match, or null if none do.
+   * Checks data_entity, business_process, protocol and criticality.
+   */
+  private _substringMatches(q: string, nodeId: string): Map<string, number> | null {
+    if (!this._currentSg || !nodeId) return null;
+    const lq = q.toLowerCase();
+    const result = new Map<string, number>();
+    this._currentSg.edges.forEach(e => {
+      if (e.source !== nodeId && e.target !== nodeId) return;
+      const haystack = `${e.data_entity ?? ''} ${e.business_process ?? ''} ${e.protocol ?? ''} ${e.criticality ?? ''}`.toLowerCase();
+      if (haystack.includes(lq)) result.set(e.id, 1.0);
+    });
+    return result.size > 0 ? result : null;
+  }
+
+  /**
+   * Called by the search input on every keystroke.
+   *
+   * Strategy:
+   *  1. Instant substring scan — if any flow literally contains the query,
+   *     show those results immediately (score = 1.0 / "EXACT"), no API wait.
+   *  2. If zero exact matches, push to searchInput$ → debounced semantic
+   *     search via ChromaDB embeddings fires after 350 ms.
+   *
+   * The debounced pipeline re-checks for exact matches at fire-time, so
+   * it never overwrites an already-displayed exact result with semantic scores.
+   */
   onSearchInput(v: string) {
     this.flowSearch.set(v);
+
+    if (!v.trim()) {
+      this.clearSearch();
+      return;
+    }
+
+    const nodeId = this.currentNodeId();
+    const exact  = this._substringMatches(v, nodeId);
+
+    if (exact !== null) {
+      // Exact/literal match found — show instantly, no spinner
+      this.flowMatchIds.set(exact);
+      this.searching.set(false);
+    }
+    // Always push to the debounced pipeline:
+    //   • If exact !== null  → the pipeline will re-check and bail (EMPTY)
+    //   • If exact === null  → the pipeline will fire the semantic HTTP call
     this.searchInput$.next(v);
   }
 
@@ -137,14 +194,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     return m.get(flowId) ?? null;
   }
 
-  /** Colour-codes the confidence badge: green ≥ 75%, amber ≥ 50%, slate < 50%. */
+  /** Colour-codes the confidence badge: green = EXACT/high, amber = mid, slate = low. */
   scoreColor(score: number): string {
     if (score >= 0.75) return '#4ade80';
     if (score >= 0.50) return '#fbbf24';
     return '#94a3b8';
   }
 
-  /** Human-readable label — "EXACT" for substring hits (score=1.0), otherwise %. */
+  /** "EXACT" for substring hits (score = 1.0), percentage label otherwise. */
   scoreLabel(score: number): string {
     return score === 1.0 ? 'EXACT' : `${Math.round(score * 100)}%`;
   }
@@ -175,7 +232,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     return Array.from(map.values());
   }
 
-  /** Upstream systems — filtered by semantic match IDs when a search is active */
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
     return this._groupFlows(
@@ -188,7 +244,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Downstream systems — filtered by semantic match IDs when a search is active */
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
     return this._groupFlows(
