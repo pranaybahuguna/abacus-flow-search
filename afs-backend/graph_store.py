@@ -139,8 +139,17 @@ class GraphStore:
         """Just the two endpoints of a single named flow."""
         for s, t, d in self._G.edges(data=True):
             if d.get("id") == flow_id:
-                return _export(self._G.subgraph([s, t]),
-                               d.get("business_process", flow_id))
+                nodes = [
+                    {"id": s, **dict(self._G.nodes[s])},
+                    {"id": t, **dict(self._G.nodes[t])},
+                ]
+                edges = [{"source": s, "target": t, **d}]
+                return {
+                    "label": d.get("business_process", flow_id),
+                    "regulatory": None,
+                    "nodes": nodes,
+                    "edges": edges,
+                }
         return _empty("Flow not found")
 
     def subgraph_for_flows(self, flow_ids: list[str]) -> dict:
