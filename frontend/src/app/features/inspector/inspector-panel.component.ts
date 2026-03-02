@@ -4,7 +4,7 @@ import { CommonModule }           from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Subject, of, EMPTY }     from 'rxjs';
 import { switchMap, shareReplay, map, tap, catchError,
-         debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+         debounceTime, takeUntil } from 'rxjs/operators';
 import { GraphService }    from '../../core/services/graph.service';
 import { SubgraphResponse } from '../../core/models/models';
 import { ds, CRIT_STROKE, Flow, SimNode } from '../../core/models/models';
@@ -78,7 +78,6 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     // Debounced semantic search — fires on every non-empty query after 350 ms idle
     this.searchInput$.pipe(
       debounceTime(350),
-      distinctUntilChanged(),
       switchMap(q => {
         if (!q.trim()) {
           this.searching.set(false);
