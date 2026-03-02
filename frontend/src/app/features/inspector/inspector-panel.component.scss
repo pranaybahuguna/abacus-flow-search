@@ -91,9 +91,11 @@
 .fg-row{display:flex;align-items:center;gap:6px;padding:5px 7px}
 .fg-count{font-size:7px;padding:2px 7px;border-radius:10px;background:#1a3050;border:1px solid #2a5a82;color:#60a5fa;flex-shrink:0;white-space:nowrap}
 .fg-flows{padding:3px 8px 6px 14px;display:flex;flex-direction:column;gap:3px;border-top:1px solid #1a3050}
-.fg-flow{font-size:8px;color:#b0c6dc;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s}
+.fg-flow{font-size:8px;color:#b0c6dc;display:flex;align-items:center;gap:5px;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s;min-width:0}
 .fg-flow:hover{background:#1a3050;color:#d2e4f6}
 .fg-dot{font-size:7px;flex-shrink:0}
+.fg-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fg-score{flex-shrink:0;font-size:6.5px;font-weight:600;letter-spacing:.04em;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.25);margin-left:auto;white-space:nowrap}
 .empty-flows{font-size:8.5px;color:#60a5fa;padding:3px 0 6px;opacity:.6}
 
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */

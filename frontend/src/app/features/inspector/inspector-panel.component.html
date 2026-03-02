@@ -83,7 +83,12 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                {{f.data_entity}}
+                <span class="fg-name">{{f.data_entity}}</span>
+                <span class="fg-score"
+                      *ngIf="getScore(f.id) != null"
+                      [style.color]="scoreColor(getScore(f.id)!)">
+                  {{scoreLabel(getScore(f.id)!)}}
+                </span>
               </div>
             </div>
           </div>
@@ -110,7 +115,12 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                {{f.data_entity}}
+                <span class="fg-name">{{f.data_entity}}</span>
+                <span class="fg-score"
+                      *ngIf="getScore(f.id) != null"
+                      [style.color]="scoreColor(getScore(f.id)!)">
+                  {{scoreLabel(getScore(f.id)!)}}
+                </span>
               </div>
             </div>
           </div>

@@ -21,7 +21,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   collapsed     = signal(false);
   flowSearch    = signal('');                       // text in the input
-  flowMatchIds  = signal<Set<string> | null>(null); // null = no filter active
+  /** flow_id → similarity score (0–1). null = no active search / show all. */
+  flowMatchIds  = signal<Map<string, number> | null>(null);
   searching     = signal(false);
   currentNodeId = signal<string>('');
 
@@ -89,11 +90,13 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         const nodeId = this.currentNodeId();
         if (!nodeId) { this.searching.set(false); return EMPTY; }
         this.searching.set(true);
-        return this.http.get<{ flow_ids: string[] }>('/api/inspector/flows', {
+        return this.http.get<{ results: { flow_id: string; score: number }[] }>('/api/inspector/flows', {
           params: { q, node_id: nodeId },
         }).pipe(
           tap(res => {
-            this.flowMatchIds.set(new Set(res.flow_ids));
+            const m = new Map<string, number>();
+            res.results.forEach(r => m.set(r.flow_id, r.score));
+            this.flowMatchIds.set(m);
             this.searching.set(false);
           }),
           catchError(() => {
@@ -126,6 +129,25 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   ds(domain: string) { return ds(domain); }
   cs(crit:  string)  { return CRIT_STROKE[crit] ?? '#6b7280'; }
+
+  /** Returns the similarity score (0–1) for a flow, or null when no search is active. */
+  getScore(flowId: string): number | null {
+    const m = this.flowMatchIds();
+    if (m === null) return null;
+    return m.get(flowId) ?? null;
+  }
+
+  /** Colour-codes the confidence badge: green ≥ 75%, amber ≥ 50%, slate < 50%. */
+  scoreColor(score: number): string {
+    if (score >= 0.75) return '#4ade80';
+    if (score >= 0.50) return '#fbbf24';
+    return '#94a3b8';
+  }
+
+  /** Human-readable label — "EXACT" for substring hits (score=1.0), otherwise %. */
+  scoreLabel(score: number): string {
+    return score === 1.0 ? 'EXACT' : `${Math.round(score * 100)}%`;
+  }
 
   // ── Grouped flow helpers ─────────────────────────────────────────────────
 

@@ -310,27 +310,34 @@ def inspector_flow_search(
 
     # 2. Vector similarity search across all flows (high top_k, low threshold)
     r = _vsearch.search(q, entity_type="flow", top_k=top_k)
-    matched: list[str] = [
-        c.entity_id
+    # list of (flow_id, score) tuples, ranked by score descending
+    matched: list[tuple[str, float]] = [
+        (c.entity_id, round(c.score, 3))
         for c in r.candidates
         if c.score >= min_score and c.entity_id in node_edges
     ]
-    matched_set = set(matched)
+    matched_ids = {fid for fid, _ in matched}
 
     # 3. Substring fallback — always surface literal keyword matches
+    #    These get score=1.0 to indicate an exact/literal hit
     lq = q.strip().lower()
     if lq:
         for flow_id, e in node_edges.items():
-            if flow_id in matched_set:
+            if flow_id in matched_ids:
                 continue
             haystack = " ".join(str(e.get(f, "")) for f in (
                 "data_entity", "business_process", "protocol",
                 "criticality", "description",
             )).lower()
             if lq in haystack:
-                matched.append(flow_id)
+                matched.append((flow_id, 1.0))
 
-    return {"flow_ids": matched}
+    return {
+        "results": [
+            {"flow_id": fid, "score": score}
+            for fid, score in matched
+        ]
+    }
 
 
 @app.get("/api/dependencies")
