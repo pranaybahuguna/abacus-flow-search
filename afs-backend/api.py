@@ -312,8 +312,10 @@ def inspector_flow_search(
     r = _vsearch.search(q, entity_type="flow", top_k=top_k)
 
     # 3. Keep only flows that belong to this node, preserve ranking order
+    # Clamp scores to [0, 1] — ChromaDB L2→relevance can produce negative values
+    # for dissimilar embeddings; negative % labels are confusing in the UI.
     results = [
-        {"flow_id": c.entity_id, "score": round(c.score, 3)}
+        {"flow_id": c.entity_id, "score": max(0.0, round(c.score, 3))}
         for c in r.candidates          # already sorted best-first by ChromaDB
         if c.entity_id in node_flow_ids
     ]

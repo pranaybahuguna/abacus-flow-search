@@ -75,6 +75,8 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
       // System click: clear BP context → show all flows in inspector
       this.gs.contextBp.set(null);
       this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
+        // Cache so inspector skips a duplicate HTTP call
+        this.gs.inspectorSgCache.set(sg);
         const node = sg.nodes.find(n => n.id === c.entity_id);
         if (node) this.gs.selectNode(node as SimNode);
       });

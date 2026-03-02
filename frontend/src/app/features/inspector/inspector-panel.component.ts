@@ -29,11 +29,20 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   /**
    * Inspector-specific subgraph: always the selected node's full 1-hop
    * neighbourhood, fetched independently of the canvas view.
+   *
+   * When a system was just picked from the left panel, the subgraph was
+   * already fetched by pick() and stored in gs.inspectorSgCache. In that
+   * case we use the cached value immediately (zero-latency). Otherwise we
+   * fall back to a fresh HTTP request (e.g. direct graph-canvas click).
    */
   readonly inspectorSg$ = this.gs.selected$.pipe(
     map(sel => (sel?.kind === 'node' ? sel.node : null)),
     switchMap(node => {
       if (!node) return of(null);
+      const cached = this.gs.inspectorSgCache();
+      if (cached && cached.nodes.some(n => n.id === node.id)) {
+        return of(cached);
+      }
       const params = new HttpParams()
         .set('entity_id', node.id)
         .set('entity_type', 'system');

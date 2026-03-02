@@ -24,6 +24,13 @@ export class GraphService {
   /** Business-process name to scope the inspector panel to. null = show all flows. */
   readonly contextBp = signal<string | null>(null);
 
+  /**
+   * Cached subgraph from the most recent pick() call.
+   * Lets the inspector panel skip its own HTTP request when the canvas
+   * subgraph was already fetched for the selected system node.
+   */
+  readonly inspectorSgCache = signal<SubgraphResponse | null>(null);
+
   loadSubgraph(entityId:string, entityType:EntityType) {
     this._l.next(true);
     const p = new HttpParams().set('entity_id',entityId).set('entity_type',entityType);
@@ -43,5 +50,5 @@ export class GraphService {
 
   selectNode(node:SimNode)  { this._sel.next({kind:'node',node}); }
   selectEdge(edge:SimEdge)  { this._sel.next({kind:'edge',edge}); }
-  clearSelection()          { this._sel.next(null); }
+  clearSelection()          { this._sel.next(null); this.inspectorSgCache.set(null); }
 }
