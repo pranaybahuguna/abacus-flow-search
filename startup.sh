@@ -5,10 +5,12 @@ set -e
 cd /app/backend
 
 # ── Step 1: Build NetworkX graph (fast, ~1s) ─────────────────────────────────
-if [ ! -f "graph.pkl" ]; then
+if [ ! -f "data/graph.pkl" ]; then
     echo "🔨  Building graph store from enterprise_data.json..."
     python graph_store.py
     echo "✅  Graph built."
+else
+    echo "✅  Graph already built. Skipping."
 fi
 
 # ── Step 2: Build ChromaDB vector embeddings (calls OpenAI, ~30-60s) ─────────
@@ -16,7 +18,7 @@ CHROMA_COUNT=$(python3 -c "
 import os, sys
 try:
     import chromadb
-    client = chromadb.PersistentClient(path='chroma_db')
+    client = chromadb.PersistentClient(path='data/chroma_db')
     col = client.get_collection('abacus_entities')
     print(col.count())
 except Exception:
