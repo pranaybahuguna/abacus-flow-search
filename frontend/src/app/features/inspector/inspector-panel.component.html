@@ -49,13 +49,14 @@
 
       <!-- ── Flow search bar — outside subgraph$ so it always renders ── -->
       <div class="div"></div>
-      <div class="sl">FLOWS</div>
-
-      <!-- BP context chip — inspector is scoped to a specific business process -->
-      <div class="bp-ctx" *ngIf="gs.contextBp()">
-        <span class="bp-ctx-icon">◈</span>
-        <span class="bp-ctx-name">{{gs.contextBp()}}</span>
-        <button class="bp-ctx-clear" (click)="clearBpContext()" title="Show all flows">×</button>
+      <div class="sl">
+        FLOWS
+        <!-- BP context chip — inline beside the FLOWS label -->
+        <span class="bp-ctx" *ngIf="gs.contextBp()">
+          <span class="bp-ctx-icon">◈</span>
+          <span class="bp-ctx-name">{{gs.contextBp()}}</span>
+          <button class="bp-ctx-clear" (click)="clearBpContext()" title="Show all flows">×</button>
+        </span>
       </div>
 
       <div class="fsearch">

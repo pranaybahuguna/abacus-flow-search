@@ -71,7 +71,7 @@
 .tag{padding:2px 7px;border-radius:20px;font-size:8px;background:#0e1830;border:1px solid #2a5070;color:#b0c6dc}
 
 /* ── BP context chip ────────────────────────────────────────────────────── */
-.bp-ctx{display:flex;align-items:center;gap:5px;padding:4px 8px;margin-bottom:8px;border-radius:5px;background:#0d2040;border:1px solid #1e5088}
+.bp-ctx{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;margin-left:8px;border-radius:5px;background:#0d2040;border:1px solid #1e5088}
 .bp-ctx-icon{color:#60a5fa;flex-shrink:0;font-size:9px}
 .bp-ctx-name{flex:1;font-size:8px;color:#93c5fd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bp-ctx-clear{background:none;border:none;color:#6090b8;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;margin-left:2px;transition:color .12s}
