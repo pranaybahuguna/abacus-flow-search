@@ -31,12 +31,13 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   private destroy = new Subject<void>();
   private typed$  = new Subject<string>();
 
-  query          = signal('');
-  response       = signal<SearchResponse|null>(null);
-  loading        = signal(false);
-  activeId       = signal<string|null>(null);
-  tierDismissed  = signal(false);
-  exampleGroups  = EXAMPLE_GROUPS;
+  query             = signal('');
+  response          = signal<SearchResponse|null>(null);
+  loading           = signal(false);
+  activeId          = signal<string|null>(null);
+  tierDismissed     = signal(false);
+  quickCollapsed    = signal(false);
+  exampleGroups     = EXAMPLE_GROUPS;
 
   TIER = {
     HIGH:   {color:'#22c55e', bg:'rgba(5,46,22,.85)',  icon:'✓', label:'AUTO-RESOLVED'  },

@@ -11,15 +11,20 @@
     <button class="btn-s" (click)="onEnter()" [disabled]="loading()||!query().trim()">SEARCH →</button>
   </div>
 
-  <!-- Quick examples — grouped by entity type -->
-  <div class="sect">
-    <div class="lbl">QUICK QUERIES</div>
-    <div *ngFor="let grp of exampleGroups" class="eg">
-      <div class="eg-lbl">{{grp.label}}</div>
-      <div class="chips">
-        <button *ngFor="let ex of grp.items" class="chip" (click)="useExample(ex)">{{ex}}</button>
+  <!-- Quick examples — collapsible -->
+  <div class="sect" [class.sect-collapsed]="quickCollapsed()">
+    <button class="lbl lbl-toggle" (click)="quickCollapsed.update(v => !v)">
+      QUICK QUERIES
+      <span class="lbl-chevron">{{quickCollapsed() ? '›' : '‹'}}</span>
+    </button>
+    <ng-container *ngIf="!quickCollapsed()">
+      <div *ngFor="let grp of exampleGroups" class="eg">
+        <div class="eg-lbl">{{grp.label}}</div>
+        <div class="chips">
+          <button *ngFor="let ex of grp.items" class="chip" (click)="useExample(ex)">{{ex}}</button>
+        </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 
   <!-- Confidence badge — compact, dismissible -->

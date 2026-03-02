@@ -6,6 +6,11 @@
 
 /* ── section label ───────────────────────────────────────────────── */
 .lbl{font-size:8px;color:#7ab8ff;letter-spacing:.14em;margin-bottom:7px;font-weight:600}
+.lbl-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;padding:0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#7ab8ff;letter-spacing:.14em;font-weight:600;transition:color .15s}
+.lbl-toggle:hover{color:#a8d4ff}
+.lbl-chevron{font-size:12px;line-height:1;color:#4e88bc;transition:color .15s}
+.lbl-toggle:hover .lbl-chevron{color:#7ab8ff}
+.sect-collapsed{padding-bottom:11px}
 
 /* ── search box ──────────────────────────────────────────────────── */
 .box{display:flex;align-items:center;gap:6px;background:#0e1f38;border:1px solid #2e5c84;border-radius:7px;padding:7px 9px;margin-bottom:6px;transition:border-color .2s}
