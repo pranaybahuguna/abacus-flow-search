@@ -5,7 +5,7 @@ import { FormsModule }  from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { SearchService }             from '../../core/services/search.service';
 import { GraphService }              from '../../core/services/graph.service';
-import { SearchResponse, SearchCandidate } from '../../core/models/models';
+import { SearchResponse, SearchCandidate, SimNode } from '../../core/models/models';
 
 const EXAMPLE_GROUPS = [
   { label: 'PROCESSES', items: [
@@ -69,7 +69,12 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
 
   pick(c:SearchCandidate) {
     this.activeId.set(c.entity_id);
-    this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe();
+    this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
+      if (c.entity_type === 'system') {
+        const node = sg.nodes.find(n => n.id === c.entity_id);
+        if (node) this.gs.selectNode(node as SimNode);
+      }
+    });
   }
 
   loadFull() { this.activeId.set('__full__'); this.gs.loadFull().subscribe(); }
