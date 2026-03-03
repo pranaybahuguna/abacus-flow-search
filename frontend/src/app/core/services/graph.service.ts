@@ -56,6 +56,17 @@ export class GraphService {
   /** True when any entity is pinned */
   readonly hasPins = computed(() => this.pins().size > 0);
 
+  /**
+   * Set of all edge IDs that belong to any pinned subgraph.
+   * Used by the inspector to restrict visible flows to only those
+   * relevant to the currently pinned entities.
+   */
+  readonly pinnedEdgeIds = computed(() => {
+    const ids = new Set<string>();
+    this.pins().forEach(p => p.sg.edges.forEach(e => ids.add(e.id)));
+    return ids;
+  });
+
   /** edge_id → pin colour — set before _sg is updated so canvas reads fresh colours */
   readonly edgePinColors = signal<Map<string, string>>(new Map());
 
