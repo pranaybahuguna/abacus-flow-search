@@ -67,7 +67,7 @@
         <button class="pin-btn"
                 [class.pin-btn--pinned]="gs.pinColor(c.entity_id)"
                 [style.color]="gs.pinColor(c.entity_id) ?? ''"
-                [disabled]="isPinLoading(c.entity_id) || (!gs.pinColor(c.entity_id) && gs.pins().size >= 3)"
+                [disabled]="isPinLoading(c.entity_id) || (!gs.pinColor(c.entity_id) && gs.pins().size >= 15)"
                 (click)="togglePin(c); $event.stopPropagation()"
                 [title]="gs.pinColor(c.entity_id) ? 'Unpin' : 'Pin to compare (max 15)'">
           <span class="pin-spin" *ngIf="isPinLoading(c.entity_id)"></span>
