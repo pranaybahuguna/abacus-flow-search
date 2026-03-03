@@ -110,7 +110,7 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
       this.gs.unpinEntity(c.entity_id);
       return;
     }
-    if (this.gs.pins().size >= 3) return;
+    if (this.gs.pins().size >= 15) return;
 
     // Mark as loading
     const loading = new Set(this.pinLoading());
@@ -136,7 +136,7 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
 
   /** Returns true if this candidate can be pinned (not at cap, or already pinned) */
   canPin(c: SearchCandidate): boolean {
-    return !!this.gs.pinColor(c.entity_id) || this.gs.pins().size < 3;
+    return !!this.gs.pinColor(c.entity_id) || this.gs.pins().size < 15;
   }
 
   loadFull() {

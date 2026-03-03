@@ -9,8 +9,14 @@ import {
 
 export type AppMode = 'graph' | 'impact' | 'dependency';
 
-/** Colours assigned to each pinned entity — amber, purple, cyan */
-export const PIN_COLORS = ['#f59e0b', '#a855f7', '#22d3ee'];
+/** Colours assigned to each pinned entity — up to 15 distinct hues */
+export const PIN_COLORS = [
+  '#f59e0b', '#a855f7', '#22d3ee',
+  '#22c55e', '#ef4444', '#3b82f6',
+  '#ec4899', '#f97316', '#14b8a6',
+  '#a3e635', '#e879f9', '#fb923c',
+  '#38bdf8', '#4ade80', '#fb7185',
+];
 
 export interface PinnedEntity {
   candidate: SearchCandidate;
@@ -47,7 +53,7 @@ export class GraphService {
 
   // ── Pin state ─────────────────────────────────────────────────────────────
 
-  /** entity_id → PinnedEntity (max 3) */
+  /** entity_id → PinnedEntity (max 15) */
   readonly pins = signal<Map<string, PinnedEntity>>(new Map());
 
   /** Stable array of pinned entities for *ngFor — recomputes only when pins change */
@@ -78,7 +84,7 @@ export class GraphService {
   /** Add an entity to the pinned set and push merged subgraph to canvas */
   pinEntity(candidate: SearchCandidate, sg: SubgraphResponse) {
     const current = this.pins();
-    if (current.has(candidate.entity_id) || current.size >= 3) return;
+    if (current.has(candidate.entity_id) || current.size >= 15) return;
 
     const usedColors = new Set(Array.from(current.values()).map(p => p.color));
     const color = PIN_COLORS.find(c => !usedColors.has(c)) ?? PIN_COLORS[0];
