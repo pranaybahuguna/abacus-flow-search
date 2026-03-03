@@ -75,25 +75,29 @@ class SubgraphOut(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _sys(n: dict) -> SystemOut:
-    return SystemOut(id=n["id"], name=n.get("name",""),
+    system_out = SystemOut(id=n["id"], name=n.get("name",""),
                      domain=n.get("domain",""), purpose=n.get("purpose",""),
                      owner=n.get("owner",""), tags=n.get("tags",[]))
+    return system_out
 
 def _flow(e: dict) -> FlowOut:
-    return FlowOut(id=e.get("id",""), source=e.get("source",""),
+    flow_out = FlowOut(id=e.get("id",""), source=e.get("source",""),
                    target=e.get("target",""), data_entity=e.get("data_entity",""),
                    business_process=e.get("business_process",""),
                    protocol=e.get("protocol",""), criticality=e.get("criticality",""),
                    frequency=e.get("frequency",""))
+    return flow_out
 
 def _subgraph_out(sg: dict) -> SubgraphOut:
-    return SubgraphOut(label=sg["label"], regulatory=sg.get("regulatory"),
+    subgraph_out = SubgraphOut(label=sg["label"], regulatory=sg.get("regulatory"),
                        nodes=[_sys(n) for n in sg["nodes"]],
                        edges=[_flow(e) for e in sg["edges"]])
+    return subgraph_out
 
 def _candidate_out(c) -> CandidateOut:
-    return CandidateOut(entity_id=c.entity_id, entity_type=c.entity_type,
+    candidate_out = CandidateOut(entity_id=c.entity_id, entity_type=c.entity_type,
                         name=c.name, score=c.score, domain=c.domain)
+    return candidate_out
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Abacus API", version="3.0.0")
@@ -127,13 +131,14 @@ def search(
     Returns candidates with confidence tier (HIGH/MEDIUM/LOW).
     Angular auto-triggers /api/graph if tier == HIGH.
     """
-    r = _vsearch.search(q, entity_type=entity_type)   # no model arg
-    return SearchOut(
-        tier       = r.tier,
-        message    = r.message,
-        resolved   = _candidate_out(r.resolved) if r.resolved else None,
-        candidates = [_candidate_out(c) for c in r.candidates],
+    r = _vsearch.search(q, entity_type=entity_type)
+    search_out = SearchOut(
+        tier=r.tier,
+        message=r.message,
+        resolved=_candidate_out(r.resolved) if r.resolved else None,
+        candidates=[_candidate_out(c) for c in r.candidates]
     )
+    return search_out
 
 
 @app.get("/api/graph", response_model=SubgraphOut)
@@ -374,27 +379,28 @@ def get_dependencies(
             sub     = _graph._G.subgraph(all_ids)
             nodes   = [_sys({"id": n, **dict(a)}) for n, a in sub.nodes(data=True)]
             edges   = [_flow({"source": s, "target": t, **d}) for s, t, d in sub.edges(data=True)]
-            return {
-                "resolution":    "RESOLVED",
+            sys_res = {
+                "resolution": "RESOLVED",
                 "resolved_type": "system",
                 "resolved_name": resolved_name,
-                "score":         resolved_score,
+                "score": resolved_score,
                 "footprint": {
-                    "label":      resolved_name + " — full dependency map",
+                    "label": resolved_name + " — full dependency map",
                     "regulatory": None,
                     "core": [{"id": entity_id, "name": resolved_name,
                               "domain": sys_info.get("domain", ""), "role": "origin"}],
-                    "upstream":   upstream,
+                    "upstream": upstream,
                     "downstream": downstream,
                     "summary": {
-                        "upstream_count":   len(upstream),
+                        "upstream_count": len(upstream),
                         "downstream_count": len(downstream),
-                        "total_footprint":  len(all_ids),
+                        "total_footprint": len(all_ids),
                     },
                     "nodes": [n.dict() for n in nodes],
                     "edges": [e.dict() for e in edges],
                 },
             }
+            return sys_res
 
         if entity_type == "business_process":
             fp = _graph.process_footprint(entity_id, max_hops=max_hops)
@@ -403,7 +409,7 @@ def get_dependencies(
             resolved_name = fp.get("label", entity_id)
             nodes = [_sys(n) for n in fp["nodes"]]
             edges = [_flow(e) for e in fp["edges"]]
-            return {
+            bp_res = {
                 "resolution":    "RESOLVED",
                 "resolved_type": "business_process",
                 "resolved_name": resolved_name,
@@ -424,6 +430,7 @@ def get_dependencies(
                     "edges": [e.dict() for e in edges],
                 },
             }
+            return bp_res
 
         raise HTTPException(400, f"Unknown entity_type: {entity_type}")
 
@@ -476,29 +483,30 @@ def get_dependencies(
         edges   = [_flow({"source": s, "target": t, **d})
                    for s, t, d in sub.edges(data=True)]
 
-        return {
-            "resolution":    "RESOLVED",
+        sys_res = {
+            "resolution": "RESOLVED",
             "resolved_type": "system",
             "resolved_name": resolved_name,
-            "score":         resolved_score,
+            "score": resolved_score,
             "footprint": {
-                "label":      resolved_name + " — full dependency map",
+                "label": resolved_name + " — full dependency map",
                 "regulatory": None,
                 "core": [{"id": resolved_id,
                           "name": sys_info.get("name", resolved_id),
                           "domain": sys_info.get("domain", ""),
                           "role": "origin"}],
-                "upstream":   upstream,
+                "upstream": upstream,
                 "downstream": downstream,
                 "summary": {
-                    "upstream_count":   len(upstream),
+                    "upstream_count": len(upstream),
                     "downstream_count": len(downstream),
-                    "total_footprint":  len(all_ids),
+                    "total_footprint": len(all_ids),
                 },
                 "nodes": [n.dict() for n in nodes],
                 "edges": [e.dict() for e in edges],
             },
         }
+        return sys_res
 
     # ── Business process resolved ─────────────────────────────────────────────
     fp = _graph.process_footprint(resolved_id, max_hops=max_hops)
