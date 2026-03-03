@@ -15,7 +15,7 @@
   <div class="pins-bar" *ngIf="gs.hasPins()">
     <div class="pins-bar-hdr">
       <span class="pins-bar-lbl">PINNED</span>
-      <span class="pins-bar-ct">{{gs.pinnedList().length}}/3</span>
+      <span class="pins-bar-ct">{{gs.pinnedList().length}}/15</span>
       <span class="pins-bar-hint">edges coloured by pin</span>
     </div>
     <div class="pin-chips">
@@ -69,7 +69,7 @@
                 [style.color]="gs.pinColor(c.entity_id) ?? ''"
                 [disabled]="isPinLoading(c.entity_id) || (!gs.pinColor(c.entity_id) && gs.pins().size >= 3)"
                 (click)="togglePin(c); $event.stopPropagation()"
-                [title]="gs.pinColor(c.entity_id) ? 'Unpin' : 'Pin to compare (max 3)'">
+                [title]="gs.pinColor(c.entity_id) ? 'Unpin' : 'Pin to compare (max 15)'">
           <span class="pin-spin" *ngIf="isPinLoading(c.entity_id)"></span>
           <span *ngIf="!isPinLoading(c.entity_id)">◈</span>
         </button>
