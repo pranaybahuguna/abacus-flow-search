@@ -3,9 +3,9 @@ import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, inject } fr
 import { CommonModule } from '@angular/common';
 import * as d3          from 'd3';
 import { Subject, takeUntil } from 'rxjs';
-import { GraphService }      from '../../core/services/graph.service';
+import { GraphService, PinnedEntity } from '../../core/services/graph.service';
 import {
-  SubgraphResponse, SimNode, SimEdge,
+  SubgraphResponse, SimNode, SimEdge, SearchCandidate,
   ds, CRIT_STROKE, CRIT_WIDTH, CRIT_DASH,
 } from '../../core/models/models';
 
@@ -23,6 +23,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   loading$  = this.gs.loading$;
 
   critEntries = Object.entries(CRIT_STROKE) as [string,string][];
+  trackPin(_: number, p: PinnedEntity): string { return p.candidate.entity_id; }
 
   private sim:     d3.Simulation<SimNode, SimEdge> | null = null;
   private _edges:  SimEdge[] = [];
@@ -80,7 +81,16 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       edgeFactor.set(e.id, n === 1 ? 0.16 : (i - (n - 1) / 2) * 0.22);
     });
 
-    // Defs: arrowheads per criticality + glow filter
+    // Snapshot pin colours at render time (set synchronously before _sg emits)
+    const pinColors = this.gs.edgePinColors();
+    const hasPins   = pinColors.size > 0;
+
+    // Helper: resolve stroke for an edge (pin colour takes precedence)
+    const edgeStroke = (d: SimEdge) =>
+      hasPins ? (pinColors.get(d.id) ?? CRIT_STROKE[d.criticality] ?? '#6b7280')
+              : (CRIT_STROKE[d.criticality] ?? '#6b7280');
+
+    // Defs: arrowheads per criticality + pin colours + glow filter
     const defs = svg.append('defs');
     Object.entries(CRIT_STROKE).forEach(([crit, stroke]) => {
       defs.append('marker').attr('id',`arr-${crit}`)
@@ -88,6 +98,16 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         .attr('markerWidth',9).attr('markerHeight',9).attr('orient','auto')
         .append('path').attr('d','M0,-6L12,0L0,6').attr('fill', stroke);
     });
+    if (hasPins) {
+      const uniquePinColors = new Set(pinColors.values());
+      uniquePinColors.forEach(color => {
+        const id = `arr-pin-${color.replace('#','')}`;
+        defs.append('marker').attr('id', id)
+          .attr('viewBox','0 -6 12 12').attr('refX',10).attr('refY',0)
+          .attr('markerWidth',9).attr('markerHeight',9).attr('orient','auto')
+          .append('path').attr('d','M0,-6L12,0L0,6').attr('fill', color);
+      });
+    }
     const gf = defs.append('filter').attr('id','glow')
       .attr('x','-40%').attr('y','-40%').attr('width','180%').attr('height','180%');
     gf.append('feGaussianBlur').attr('stdDeviation','4').attr('result','b');
@@ -141,16 +161,22 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         });
       });
     eSel.append('path').attr('fill','none')
-      .attr('stroke',       d => CRIT_STROKE[d.criticality] ?? '#6b7280')
-      .attr('stroke-width', d => CRIT_WIDTH[d.criticality]  ?? 1.5)
-      .attr('stroke-dasharray', d => CRIT_DASH[d.criticality] ?? null)
-      .attr('marker-end',   d => `url(#arr-${d.criticality})`)
-      .attr('opacity', .78);
+      .attr('stroke',           d => edgeStroke(d))
+      .attr('stroke-width',     d => hasPins ? 1.8 : (CRIT_WIDTH[d.criticality] ?? 1.5))
+      .attr('stroke-dasharray', d => hasPins ? null : (CRIT_DASH[d.criticality] ?? null))
+      .attr('marker-end', d => {
+        if (hasPins) {
+          const c = pinColors.get(d.id);
+          if (c) return `url(#arr-pin-${c.replace('#','')})`;
+        }
+        return `url(#arr-${d.criticality})`;
+      })
+      .attr('opacity', .82);
     eSel.append('rect').attr('rx',3).attr('fill','#030810').attr('opacity',.9);
     eSel.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle')
       .attr('font-size','9.5px').attr('font-family','IBM Plex Mono,monospace')
       .attr('pointer-events','none')
-      .attr('fill', d => CRIT_STROKE[d.criticality] ?? '#6b7280')
+      .attr('fill', d => edgeStroke(d))
       .text(d => d.data_entity.length>30 ? d.data_entity.slice(0,29)+'…' : d.data_entity);
 
     // Nodes

@@ -27,17 +27,19 @@ const EXAMPLE_GROUPS = [
 })
 export class SearchPanelComponent implements OnInit, OnDestroy {
   private ss      = inject(SearchService);
-  private gs      = inject(GraphService);
+  gs              = inject(GraphService);        // public — template reads gs.hasPins() etc.
   private destroy = new Subject<void>();
   private typed$  = new Subject<string>();
 
-  query             = signal('');
-  response          = signal<SearchResponse|null>(null);
-  loading           = signal(false);
-  activeId          = signal<string|null>(null);
-  tierDismissed     = signal(false);
-  quickCollapsed    = signal(false);
-  exampleGroups     = EXAMPLE_GROUPS;
+  query          = signal('');
+  response       = signal<SearchResponse|null>(null);
+  loading        = signal(false);
+  activeId       = signal<string|null>(null);
+  tierDismissed  = signal(false);
+  quickCollapsed = signal(false);
+  /** Set of entity_ids currently being fetched for pinning */
+  pinLoading     = signal<Set<string>>(new Set());
+  exampleGroups  = EXAMPLE_GROUPS;
 
   TIER = {
     HIGH:   {color:'#22c55e', bg:'rgba(5,46,22,.85)',  icon:'✓', label:'AUTO-RESOLVED'  },
@@ -60,7 +62,7 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   useExample(ex:string)  { this.query.set(ex); this._run(ex); }
 
   private _run(q:string) {
-    this.tierDismissed.set(false);   // show badge fresh on every new search
+    this.tierDismissed.set(false);
     this.ss.search(q).subscribe(res => {
       if (res.tier==='HIGH' && res.resolved) this.pick(res.resolved);
     });
@@ -69,24 +71,29 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   dismissTier()        { this.tierDismissed.set(true); }
   toggleQuickQueries() { this.quickCollapsed.update(v => !v); }
 
-  pick(c:SearchCandidate) {
+  pick(c: SearchCandidate) {
     this.activeId.set(c.entity_id);
+
+    // ── Pin mode: don't reload canvas; just focus node if visible ──────────
+    if (this.gs.hasPins()) {
+      if (c.entity_type === 'system') {
+        const node = this.gs.currentSubgraphValue?.nodes.find(n => n.id === c.entity_id);
+        if (node) this.gs.selectNode(node as SimNode);
+      }
+      return;
+    }
+
+    // ── Normal (single-entity) mode ────────────────────────────────────────
     if (c.entity_type === 'system') {
-      // System click: clear BP context → show all flows in inspector
       this.gs.contextBp.set(null);
       this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
-        // Cache so inspector skips a duplicate HTTP call
         this.gs.inspectorSgCache.set(sg);
         const node = sg.nodes.find(n => n.id === c.entity_id);
         if (node) this.gs.selectNode(node as SimNode);
       });
     } else {
-      // BP or Flow click: set BP context so inspector filters to that process
       this.gs.loadSubgraph(c.entity_id, c.entity_type).subscribe(sg => {
         if (c.entity_type === 'business_process') {
-          // Use c.name directly — the BP's own label from the search result.
-          // Inspector will filter flows by e.business_process === contextBp,
-          // showing only flows that truly belong to this business process.
           this.gs.contextBp.set(c.name);
         } else if (c.entity_type === 'flow') {
           const edge = sg.edges.find(e => e.id === c.entity_id);
@@ -96,8 +103,50 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadFull() { this.activeId.set('__full__'); this.gs.contextBp.set(null); this.gs.loadFull().subscribe(); }
+  /** Pin or unpin a result card. Fetches the subgraph silently on first pin. */
+  togglePin(c: SearchCandidate) {
+    // Already pinned → unpin
+    if (this.gs.pinColor(c.entity_id)) {
+      this.gs.unpinEntity(c.entity_id);
+      return;
+    }
+    if (this.gs.pins().size >= 3) return;
+
+    // Mark as loading
+    const loading = new Set(this.pinLoading());
+    loading.add(c.entity_id);
+    this.pinLoading.set(loading);
+
+    this.gs.fetchSubgraph(c.entity_id, c.entity_type).subscribe({
+      next: sg => {
+        this.gs.pinEntity(c, sg);
+        const done = new Set(this.pinLoading());
+        done.delete(c.entity_id);
+        this.pinLoading.set(done);
+      },
+      error: () => {
+        const done = new Set(this.pinLoading());
+        done.delete(c.entity_id);
+        this.pinLoading.set(done);
+      },
+    });
+  }
+
+  isPinLoading(id: string): boolean { return this.pinLoading().has(id); }
+
+  /** Returns true if this candidate can be pinned (not at cap, or already pinned) */
+  canPin(c: SearchCandidate): boolean {
+    return !!this.gs.pinColor(c.entity_id) || this.gs.pins().size < 3;
+  }
+
+  loadFull() {
+    this.activeId.set('__full__');
+    this.gs.contextBp.set(null);
+    this.gs.clearAllPins();          // full map replaces pinned view
+    this.gs.loadFull().subscribe();
+  }
 
   scoreColor(s:number) { return s>=0.82?'#22c55e':s>=0.65?'#f59e0b':'#ef4444'; }
-  track(_:number, c:SearchCandidate) { return c.entity_id; }
+  track(_:number, c:SearchCandidate)         { return c.entity_id; }
+  trackPin(_:number, p:{ candidate: SearchCandidate }) { return p.candidate.entity_id; }
 }

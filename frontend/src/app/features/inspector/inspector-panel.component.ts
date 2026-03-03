@@ -201,11 +201,15 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    const matchIds    = this.flowMatchIds();
+    const hasPins     = this.gs.hasPins();
+    const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
+    const bpFilter    = hasPins ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.target !== nodeId) return false;
+        // In pin mode: only show flows that belong to at least one pinned subgraph
+        if (hasPins && !pinnedEdges.has(e.id)) return false;
         // In BP/flow context: only show flows whose primary business_process matches.
         if (bpFilter !== null && e.business_process !== bpFilter) return false;
         if (matchIds === null) return true;
@@ -217,11 +221,15 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
-    const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    const matchIds    = this.flowMatchIds();
+    const hasPins     = this.gs.hasPins();
+    const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
+    const bpFilter    = hasPins ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.source !== nodeId) return false;
+        // In pin mode: only show flows that belong to at least one pinned subgraph
+        if (hasPins && !pinnedEdges.has(e.id)) return false;
         if (bpFilter !== null && e.business_process !== bpFilter) return false;
         if (matchIds === null) return true;
         return matchIds.has(e.id);
