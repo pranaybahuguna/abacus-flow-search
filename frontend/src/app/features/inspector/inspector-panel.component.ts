@@ -203,7 +203,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
     const bpFilter = this.gs.contextBp();
-    return this._groupFlows(
+    const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.target !== nodeId) return false;
         // In BP/flow context: only show flows whose primary business_process matches.
@@ -213,12 +213,13 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       }),
       'source', sg,
     );
+    return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
   }
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
     const bpFilter = this.gs.contextBp();
-    return this._groupFlows(
+    const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.source !== nodeId) return false;
         if (bpFilter !== null && e.business_process !== bpFilter) return false;
@@ -227,6 +228,27 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       }),
       'target', sg,
     );
+    return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
+  }
+
+  /** When a search is active, sort groups by their best-matching flow score (desc),
+   *  and sort the flows within each group by score (desc). */
+  private _sortByScore(
+    groups: { sysId: string; sysName: string; topCrit: string; flows: SubgraphResponse['edges'] }[],
+    matchIds: Map<string, number>,
+  ) {
+    // Sort flows within each group highest-score first
+    groups.forEach(grp => {
+      grp.flows = [...grp.flows].sort(
+        (a, b) => (matchIds.get(b.id) ?? 0) - (matchIds.get(a.id) ?? 0),
+      );
+    });
+    // Sort groups by the score of their top-ranked flow
+    return groups.sort((a, b) => {
+      const aMax = a.flows.length ? (matchIds.get(a.flows[0].id) ?? 0) : 0;
+      const bMax = b.flows.length ? (matchIds.get(b.flows[0].id) ?? 0) : 0;
+      return bMax - aMax;
+    });
   }
 
   selectFlow(flow: Flow, sg: SubgraphResponse) {

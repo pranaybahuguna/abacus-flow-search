@@ -106,7 +106,7 @@
 .fg-flow:hover{background:#1a3050;color:#daeaf8}
 .fg-dot{font-size:7px;flex-shrink:0}
 .fg-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.fg-score{flex-shrink:0;font-size:6.5px;font-weight:600;letter-spacing:.04em;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.25);margin-left:auto;white-space:nowrap}
+.fg-score{flex-shrink:0;font-size:8.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);margin-left:auto;white-space:nowrap}
 .empty-flows{font-size:8.5px;color:#80b8fa;padding:3px 0 6px;opacity:.75}
 
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
