@@ -202,7 +202,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    // In multi-pin mode show all flows — each pinned entity contributes its own BP context
+    const bpFilter = this.gs.hasPins() ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.target !== nodeId) return false;
@@ -218,7 +219,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds = this.flowMatchIds();
-    const bpFilter = this.gs.contextBp();
+    // In multi-pin mode show all flows — each pinned entity contributes its own BP context
+    const bpFilter = this.gs.hasPins() ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.source !== nodeId) return false;

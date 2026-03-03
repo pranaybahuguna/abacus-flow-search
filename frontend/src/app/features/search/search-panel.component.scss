@@ -58,6 +58,26 @@ input::placeholder{color:#7aaac8}
 .bar{height:2px;background:#1e3d5c;border-radius:1px;overflow:hidden}
 .bar div{height:100%;border-radius:1px;transition:width .4s ease}
 
+/* ── pinned entities bar ─────────────────────────────────────────── */
+.pins-bar{padding:8px 12px 10px;border-bottom:1px solid #2a5a82;flex-shrink:0;background:#060e1e}
+.pins-bar-hdr{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.pins-bar-lbl{font-size:7px;letter-spacing:.14em;color:#90c8ff;font-weight:600}
+.pins-bar-ct{font-size:7px;padding:1px 5px;border-radius:8px;background:#1a3050;color:#80b8fa;letter-spacing:0}
+.pins-bar-hint{font-size:7px;color:#4a7090;margin-left:auto;font-style:italic}
+.pin-chips{display:flex;flex-wrap:wrap;gap:4px}
+.pin-chip{display:flex;align-items:center;gap:4px;padding:3px 4px 3px 7px;border-radius:20px;background:#0b1828;border:1px solid;transition:opacity .15s}
+.pin-chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pin-chip-name{font-size:8px;color:#d4e8f8;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pin-chip-rm{background:none;border:none;color:#5a8090;cursor:pointer;font-size:14px;line-height:1;padding:0 3px;margin-left:1px;flex-shrink:0;transition:color .12s}
+.pin-chip-rm:hover{color:#e2ecf8}
+
+/* ── pin button on candidate cards ─────────────────────────────── */
+.pin-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#3a6a96;padding:0 2px;line-height:1;flex-shrink:0;margin-left:2px;transition:color .15s,transform .15s}
+.pin-btn:hover:not(:disabled){color:#90c8ff;transform:scale(1.2)}
+.pin-btn--pinned{/* color comes from [style.color] bound to pin colour */}
+.pin-btn:disabled{opacity:.28;cursor:default}
+.pin-spin{display:inline-block;width:8px;height:8px;border:1.5px solid #3a6a96;border-top-color:#90c8ff;border-radius:50%;animation:spin .6s linear infinite}
+
 /* ── empty state ─────────────────────────────────────────────────── */
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#80a8c8;font-size:10px}
 .ei{font-size:28px}

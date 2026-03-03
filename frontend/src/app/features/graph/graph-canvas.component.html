@@ -21,12 +21,23 @@
   <div class="bar-top" *ngIf="subgraph$ | async as sg">
     <div class="pill">{{sg.nodes.length}} nodes · {{sg.edges.length}} edges</div>
     <div class="pill reg" *ngIf="sg.regulatory">⚖ {{sg.regulatory}}</div>
+    <div class="pill pin-mode-pill" *ngIf="gs.hasPins()">◈ MULTI-PROCESS VIEW</div>
     <button class="pill esc" *ngIf="selected$ | async" (click)="gs.clearSelection()">ESC · clear</button>
   </div>
 
   <!-- Bottom legend -->
   <div class="bar-bot" *ngIf="subgraph$ | async">
-    <div class="legend">
+
+    <!-- Pin legend — shown when entities are pinned -->
+    <div class="legend" *ngIf="gs.hasPins()">
+      <div *ngFor="let p of gs.pinnedList(); trackBy: trackPin" class="li">
+        <span class="pin-leg-dot" [style.background]="p.color"></span>
+        <span>{{p.candidate.name}}</span>
+      </div>
+    </div>
+
+    <!-- Criticality legend — shown in normal (non-pin) mode -->
+    <div class="legend" *ngIf="!gs.hasPins()">
       <div *ngFor="let e of critEntries" class="li">
         <svg width="18" height="6">
           <line x1="0" y1="3" x2="18" y2="3"
@@ -37,6 +48,7 @@
         <span>{{e[0]}}</span>
       </div>
     </div>
+
     <span class="hint">scroll=zoom · drag=pan · click=inspect</span>
   </div>
 </div>
