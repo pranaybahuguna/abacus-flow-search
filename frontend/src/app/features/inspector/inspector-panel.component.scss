@@ -48,7 +48,7 @@
 .hc{flex:1;min-width:0}
 .ml{font-size:7.5px;letter-spacing:.14em;margin-bottom:4px}
 .mn{font-size:12px;color:#d2e4f6;font-family:'IBM Plex Sans',sans-serif;font-weight:600;line-height:1.3;word-break:break-word}
-.mid{font-size:8.5px;color:#60a5fa;margin-top:4px}
+.mid{font-size:8.5px;color:#80b8fa;margin-top:4px}
 .close{background:none;border:1px solid #264e72;color:#b0c6dc;width:22px;height:22px;border-radius:5px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px;transition:all .15s}
 .close:hover{border-color:#3b82f6;color:#60a5fa}
 .vm{margin-top:5px}
@@ -61,20 +61,20 @@
 
 /* ── Rows & labels ──────────────────────────────────────────────────────── */
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
-.rl{font-size:8.5px;color:#60a5fa;flex-shrink:0}
-.rv{font-size:8.5px;color:#d2e4f6;text-align:right;word-break:break-word}
-.div{height:1px;background:#264e72;margin:10px 0}
-.sl{font-size:7.5px;letter-spacing:.12em;color:#60a5fa;margin-bottom:6px;display:flex;align-items:center}
+.rl{font-size:8.5px;color:#80b8fa;flex-shrink:0}
+.rv{font-size:8.5px;color:#daeaf8;text-align:right;word-break:break-word}
+.div{height:1px;background:#3a6a96;margin:10px 0}
+.sl{font-size:7.5px;letter-spacing:.12em;color:#80b8fa;margin-bottom:6px;display:flex;align-items:center}
 .sl.mt{margin-top:10px}
-.purpose{font-size:9px;color:#b0c6dc;line-height:1.6;margin:0}
+.purpose{font-size:9px;color:#c4d8ee;line-height:1.6;margin:0}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
-.tag{padding:2px 7px;border-radius:20px;font-size:8px;background:#0e1830;border:1px solid #2a5070;color:#b0c6dc}
+.tag{padding:2px 7px;border-radius:20px;font-size:8px;background:#0e1830;border:1px solid #3a6a96;color:#c4d8ee}
 
 /* ── BP context chip ────────────────────────────────────────────────────── */
 .bp-ctx{display:flex;align-items:center;gap:5px;padding:4px 8px;margin-bottom:8px;border-radius:5px;background:#0d2040;border:1px solid #1e5088}
 .bp-ctx-type{font-size:7px;font-weight:700;letter-spacing:.1em;color:#fff;background:#1e5088;border-radius:3px;padding:1px 5px;flex-shrink:0}
 .bp-ctx-icon{color:#60a5fa;flex-shrink:0;font-size:9px}
-.bp-ctx-name{flex:1;font-size:8px;color:#93c5fd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bp-ctx-name{flex:1;font-size:8px;color:#aad4ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bp-ctx-clear{background:none;border:none;color:#6090b8;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;margin-left:2px;transition:color .12s}
 .bp-ctx-clear:hover{color:#e2ecf8}
 
@@ -84,7 +84,7 @@
 .fbox:focus-within{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.15)}
 .fi{font-size:11px;color:#60a5fa;flex-shrink:0;line-height:1}
 .finput{flex:1;background:transparent;border:none;outline:none;font-size:9.5px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
-.finput::placeholder{color:#6090b8}
+.finput::placeholder{color:#7aa8c8}
 .fclear{background:none;border:none;color:#6090b8;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0;transition:color .12s}
 .fclear:hover{color:#e2ecf8}
 .fspinner{width:11px;height:11px;border:1.5px solid #2a5a82;border-top-color:#60a5fa;border-radius:50%;flex-shrink:0;animation:fspin .65s linear infinite}
@@ -100,14 +100,14 @@
 /* ── Flow group cards (grouped by system) ───────────────────────────────── */
 .fg{margin-bottom:5px;border-radius:5px;background:#0c1626;border:1px solid #264e72;overflow:hidden}
 .fg-row{display:flex;align-items:center;gap:6px;padding:5px 7px}
-.fg-count{font-size:7px;padding:2px 7px;border-radius:10px;background:#1a3050;border:1px solid #2a5a82;color:#60a5fa;flex-shrink:0;white-space:nowrap}
+.fg-count{font-size:7px;padding:2px 7px;border-radius:10px;background:#1a3050;border:1px solid #3a7ab0;color:#80b8fa;flex-shrink:0;white-space:nowrap}
 .fg-flows{padding:3px 8px 6px 14px;display:flex;flex-direction:column;gap:3px;border-top:1px solid #1a3050}
-.fg-flow{font-size:8px;color:#b0c6dc;display:flex;align-items:center;gap:5px;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s;min-width:0}
-.fg-flow:hover{background:#1a3050;color:#d2e4f6}
+.fg-flow{font-size:8px;color:#c4d8ee;display:flex;align-items:center;gap:5px;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s;min-width:0}
+.fg-flow:hover{background:#1a3050;color:#daeaf8}
 .fg-dot{font-size:7px;flex-shrink:0}
 .fg-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fg-score{flex-shrink:0;font-size:6.5px;font-weight:600;letter-spacing:.04em;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.25);margin-left:auto;white-space:nowrap}
-.empty-flows{font-size:8.5px;color:#60a5fa;padding:3px 0 6px;opacity:.6}
+.empty-flows{font-size:8.5px;color:#80b8fa;padding:3px 0 6px;opacity:.75}
 
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
 .sys{padding:8px 10px;border-radius:7px;border:1px solid;margin-bottom:4px}
