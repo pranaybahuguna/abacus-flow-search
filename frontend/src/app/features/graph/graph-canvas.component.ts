@@ -187,7 +187,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .call(d3.drag<SVGGElement,SimNode>()
         .on('start', (e,d) => { if (!e.active) this.sim?.alphaTarget(.3).restart(); d.fx=d.x; d.fy=d.y; })
         .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
-        .on('end',   (e,d) => { if (!e.active) this.sim?.alphaTarget(0); d.fx=null; d.fy=null; }));
+        .on('end',   (e,d) => { if (!e.active) this.sim?.alphaTarget(0); }));
     nSel.append('rect')
       .attr('x',-NW/2).attr('y',-NH/2).attr('width',NW).attr('height',NH).attr('rx',10)
       .attr('fill',   d => ds(d.domain).bg)
