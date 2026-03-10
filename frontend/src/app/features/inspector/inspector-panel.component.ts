@@ -262,7 +262,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   selectFlow(flow: Flow, sg: SubgraphResponse) {
     const sourceNode = sg.nodes.find(n => n.id === flow.source_app) as SimNode | undefined;
     const targetNode = sg.nodes.find(n => n.id === flow.sinc_app) as SimNode | undefined;
-    this.gs.selectEdge({ ...flow, sourceNode, targetNode });
+    this.gs.selectEdge({ ...flow, source: flow.source_app, target: flow.sinc_app, sourceNode, targetNode });
   }
 
   trackGroup(_: number, grp: { sysId: string }): string { return grp.sysId; }
