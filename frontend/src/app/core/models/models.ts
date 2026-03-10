@@ -11,13 +11,26 @@ export type Mode        = 'graph' | 'impact';
 // ── Graph entities ────────────────────────────────────────────────────────────
 export interface System {
   id: string; name: string; domain: string;
-  purpose: string; owner: string; tags: string[];
+  description: string; owner: string; tags: string[];
+  legal_entity?: string;
+  major_business_process?: string[];
+  ciat_computed?: string;
+  active?: boolean;
+  confidentiality?: string;
+  data_storage_territory?: string;
+  pd_sensitivity_declared?: boolean;
 }
 
 export interface Flow {
-  id: string; source: string; target: string;
-  data_entity: string; business_process: string;
-  protocol: string; criticality: Criticality; frequency: string;
+  id: string; source_app: string; sinc_app: string;
+  information_entity: string; business_process: string;
+  functional_block?: string;
+  message_description?: string;
+  transport_protocol: string; criticality: Criticality; frequency: string;
+  exchange_nature?: string;
+  ciat_computed?: string;
+  confidentiality?: string;
+  personal_data_protection?: string;
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -55,7 +68,7 @@ export interface SimEdge extends Flow {
 
 // ── Impact ────────────────────────────────────────────────────────────────────
 export interface ViaFlow {
-  data_entity: string; criticality: string;
+  information_entity: string; criticality: string;
   business_process: string; flow_id: string;
 }
 
@@ -72,7 +85,7 @@ export interface ImpactSummary {
 
 export interface CriticalPath {
   to_system: string; to_id: string;
-  data_entity: string; process: string; flow_id: string;
+  information_entity: string; process: string; flow_id: string;
 }
 
 export interface ProcessAtRisk {

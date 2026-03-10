@@ -112,7 +112,7 @@
           <span class="ca">⚠</span>
           <div class="ci">
             <div class="ct">→ {{p.to_system}}</div>
-            <div class="cd">{{p.data_entity}} · {{p.process}}</div>
+            <div class="cd">{{p.information_entity}} · {{p.process}}</div>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@
             <div class="dl">VIA FLOWS</div>
             <div *ngFor="let f of sys.via_flows" class="vf">
               <span class="vf-c" [style.color]="sevColor(sys.severity)">●</span>
-              <span class="vf-d">{{f.data_entity}}</span>
+              <span class="vf-d">{{f.information_entity}}</span>
               <span class="vf-cr">{{f.criticality}}</span>
               <span class="vf-p" *ngIf="f.business_process">{{f.business_process}}</span>
             </div>

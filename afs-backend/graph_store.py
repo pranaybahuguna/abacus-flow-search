@@ -49,7 +49,7 @@ def build_graph() -> nx.MultiDiGraph:
     for s in raw["systems"]:
         attrs = {k: v for k, v in s.items() if k != "embed_text"}
         attrs["business_processes"] = set()
-        G.add_node(s["id"], **attrs)
+        G.add_node(s["main_id"], **attrs)
 
     # Business processes → annotate nodes + store index on graph
     bp_index: dict[str, dict] = {}
@@ -63,8 +63,8 @@ def build_graph() -> nx.MultiDiGraph:
     # Flows → directed edges
     for flow in raw["flows"]:
         attrs = {k: v for k, v in flow.items()
-                 if k not in ("source", "target", "embed_text")}
-        G.add_edge(flow["source"], flow["target"], **attrs)
+                 if k not in ("source_app", "sinc_app", "embed_text")}
+        G.add_edge(flow["source_app"], flow["sinc_app"], **attrs)
 
     GRAPH_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(GRAPH_PATH, "wb") as f:
@@ -128,7 +128,7 @@ class GraphStore:
         flow_ids = set(bp["flows_involved"])
         sub      = self._G.subgraph(sys_ids)
         nodes    = [{"id": n, **dict(a)} for n, a in sub.nodes(data=True)]
-        edges    = [{"source": s, "target": t, **d}
+        edges    = [{"source_app": s, "sinc_app": t, **d}
                     for s, t, d in sub.edges(data=True)
                     if d.get("id") in flow_ids]
         return {"label": bp["name"],
@@ -143,7 +143,7 @@ class GraphStore:
                     {"id": s, **dict(self._G.nodes[s])},
                     {"id": t, **dict(self._G.nodes[t])},
                 ]
-                edges = [{"source": s, "target": t, **d}]
+                edges = [{"source_app": s, "sinc_app": t, **d}]
                 return {
                     "label": d.get("business_process", flow_id),
                     "regulatory": None,
@@ -223,7 +223,7 @@ class GraphStore:
                 if tgt == sid:
                     continue
                 flow = {
-                    "data_entity":      edata.get("data_entity", ""),
+                    "information_entity": edata.get("information_entity", ""),
                     "criticality":      edata.get("criticality", "Low"),
                     "business_process": edata.get("business_process", ""),
                     "flow_id":          edata.get("id", ""),
@@ -240,9 +240,9 @@ class GraphStore:
                     q.append((tgt, hops + 1))
                 else:
                     # Add extra via_flow if not already recorded
-                    seen = {(f["data_entity"], f["criticality"])
+                    seen = {(f["information_entity"], f["criticality"])
                             for f in visited[tgt]["via_flows"]}
-                    if (flow["data_entity"], flow["criticality"]) not in seen:
+                    if (flow["information_entity"], flow["criticality"]) not in seen:
                         visited[tgt]["via_flows"].append(flow)
 
         return visited
@@ -252,7 +252,7 @@ class GraphStore:
         return [
             {"to_system":   self._G.nodes[tgt].get("name", tgt),
              "to_id":       tgt,
-             "data_entity": d.get("data_entity", ""),
+             "information_entity": d.get("information_entity", ""),
              "process":     d.get("business_process", ""),
              "flow_id":     d.get("id", "")}
             for _, tgt, d in self._G.out_edges(sid, data=True)
@@ -276,7 +276,7 @@ class GraphStore:
             {"id":          src,
              "name":        self._G.nodes[src].get("name", src),
              "domain":      self._G.nodes[src].get("domain", ""),
-             "data_entity": d.get("data_entity", ""),
+             "information_entity": d.get("information_entity", ""),
              "criticality": d.get("criticality", ""),
              "flow_id":     d.get("id", "")}
             for src, _, d in self._G.in_edges(sid, data=True)
@@ -307,7 +307,7 @@ class GraphStore:
                 if src == sid:
                     continue
                 flow = {
-                    "data_entity":      edata.get("data_entity", ""),
+                    "information_entity": edata.get("information_entity", ""),
                     "criticality":      edata.get("criticality", "Low"),
                     "business_process": edata.get("business_process", ""),
                     "flow_id":          edata.get("id", ""),
@@ -323,9 +323,9 @@ class GraphStore:
                     }
                     q.append((src, hops + 1))
                 else:
-                    seen = {(f["data_entity"], f["criticality"])
+                    seen = {(f["information_entity"], f["criticality"])
                             for f in visited[src]["via_flows"]}
-                    if (flow["data_entity"], flow["criticality"]) not in seen:
+                    if (flow["information_entity"], flow["criticality"]) not in seen:
                         visited[src]["via_flows"].append(flow)
 
         return visited
@@ -384,7 +384,7 @@ class GraphStore:
         all_ids = core_ids | set(all_upstream) | set(all_downstream)
         sub     = self._G.subgraph(all_ids)
         nodes   = [{"id": n, **dict(a)} for n, a in sub.nodes(data=True)]
-        edges   = [{"source": s, "target": t, **d}
+        edges   = [{"source_app": s, "sinc_app": t, **d}
                    for s, t, d in sub.edges(data=True)]
 
         return {
@@ -404,7 +404,7 @@ class GraphStore:
 
 def _export(sub: nx.MultiDiGraph, label: str) -> dict:
     nodes = [{"id": n, **dict(a)} for n, a in sub.nodes(data=True)]
-    edges = [{"source": s, "target": t, **d} for s, t, d in sub.edges(data=True)]
+    edges = [{"source_app": s, "sinc_app": t, **d} for s, t, d in sub.edges(data=True)]
     return {"label": label, "regulatory": None, "nodes": nodes, "edges": edges}
 
 def _empty(label: str) -> dict:

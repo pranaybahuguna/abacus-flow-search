@@ -131,13 +131,13 @@ def _reason(node: dict, source_name: str) -> str:
     top  = max(flows, key=lambda f: CRIT_WEIGHT.get(f["criticality"],0))
     verb = {1:"directly receives",2:"indirectly receives",3:"transitively receives"}.get(node["hops"],"receives")
     proc = top.get("business_process","")
-    s    = f"{verb} {top['data_entity']} from {source_name} ({top['criticality']} criticality)"
+    s    = f"{verb} {top['information_entity']} from {source_name} ({top['criticality']} criticality)"
     return s + (f" as part of {proc}." if proc else ".")
 
 def _dedupe(flows: list[dict]) -> list[dict]:
     seen, out = set(), []
     for f in flows:
-        k = (f["data_entity"], f["criticality"])
+        k = (f["information_entity"], f["criticality"])
         if k not in seen:
             seen.add(k); out.append(f)
     return out

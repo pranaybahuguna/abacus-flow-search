@@ -58,7 +58,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     }));
     const byId = new Map(nodes.map(n => [n.id, n]));
     const edges: SimEdge[] = sg.edges
-      .map(e => ({ ...e, source: byId.get(e.source) as any, target: byId.get(e.target) as any }))
+      .map(e => ({ ...e, source: byId.get(e.source_app) as any, target: byId.get(e.sinc_app) as any }))
       .filter(e => e.source && e.target);
     this._edges = edges;
 
@@ -177,7 +177,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .attr('font-size','9.5px').attr('font-family','IBM Plex Mono,monospace')
       .attr('pointer-events','none')
       .attr('fill', d => edgeStroke(d))
-      .text(d => d.data_entity.length>30 ? d.data_entity.slice(0,29)+'…' : d.data_entity);
+      .text(d => d.information_entity.length>30 ? d.information_entity.slice(0,29)+'…' : d.information_entity);
 
     // Nodes
     const nG  = g.append('g');
@@ -203,6 +203,11 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     nSel.append('text').attr('y',11).attr('text-anchor','middle')
       .attr('font-size','9px').attr('font-family','IBM Plex Mono,monospace')
       .attr('fill', d => ds(d.domain).accent).text(d => d.domain.toUpperCase());
+    // Active/inactive status dot — top-right corner of node
+    nSel.append('circle')
+      .attr('cx', NW/2 - 9).attr('cy', -NH/2 + 9).attr('r', 5)
+      .attr('fill', d => d.active === false ? '#ef4444' : '#22c55e')
+      .attr('stroke', '#030810').attr('stroke-width', 1.5);
 
     // Tick — clip edge paths to node rectangle boundaries so arrows land at node edges
     // rectEdgeDist: distance from node center to rectangle boundary in direction (nx,ny)

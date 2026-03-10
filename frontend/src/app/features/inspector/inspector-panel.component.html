@@ -21,9 +21,9 @@
       }
       @if (sel.kind==='edge' && sel.edge; as edge) {
         <div class="ml" [style.color]="cs(edge.criticality)">{{edge.criticality.toUpperCase()}} FLOW</div>
-        <div class="mn">{{edge.data_entity}}</div>
+        <div class="mn">{{edge.information_entity}}</div>
         <div class="mid">
-          {{edge.sourceNode?.name ?? edge.source}} → {{edge.targetNode?.name ?? edge.target}}
+          {{edge.sourceNode?.name ?? edge.source_app}} → {{edge.targetNode?.name ?? edge.sinc_app}}
         </div>
       }
     </div>
@@ -35,11 +35,21 @@
 
     <!-- NODE detail -->
     @if (sel.kind==='node' && sel.node; as node) {
-      <div class="row"><span class="rl">Owner</span><span class="rv">{{node.owner}}</span></div>
+      <div class="row"><span class="rl">Owner</span>         <span class="rv">{{node.owner}}</span></div>
+      <div class="row"><span class="rl">Legal Entity</span>  <span class="rv">{{node.legal_entity}}</span></div>
+      <div class="row"><span class="rl">Active</span>
+        <span class="rv" [style.color]="node.active === false ? '#ef4444' : '#22c55e'">
+          {{node.active === false ? 'Inactive' : 'Active'}}
+        </span>
+      </div>
+      <div class="row"><span class="rl">Confidentiality</span><span class="rv">{{node.confidentiality}}</span></div>
+      <div class="row"><span class="rl">Data Territory</span> <span class="rv">{{node.data_storage_territory}}</span></div>
+      <div class="row"><span class="rl">CIAT</span>           <span class="rv">{{node.ciat_computed}}</span></div>
+      <div class="row"><span class="rl">PD Sensitivity</span> <span class="rv">{{node.pd_sensitivity_declared ? 'Yes' : 'No'}}</span></div>
 
       <div class="div"></div>
-      <div class="sl">PURPOSE</div>
-      <p class="purpose">{{node.purpose}}</p>
+      <div class="sl">DESCRIPTION</div>
+      <p class="purpose">{{node.description}}</p>
 
       <div class="div"></div>
       <div class="sl">TAGS</div>
@@ -98,7 +108,7 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                <span class="fg-name">{{f.data_entity}}</span>
+                <span class="fg-name">{{f.information_entity}}</span>
                 <span class="fg-score"
                       *ngIf="getScore(f.id) != null"
                       [style.color]="scoreColor(getScore(f.id)!)">
@@ -130,7 +140,7 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                <span class="fg-name">{{f.data_entity}}</span>
+                <span class="fg-name">{{f.information_entity}}</span>
                 <span class="fg-score"
                       *ngIf="getScore(f.id) != null"
                       [style.color]="scoreColor(getScore(f.id)!)">
@@ -146,10 +156,15 @@
 
     <!-- EDGE detail -->
     @if (sel.kind==='edge' && sel.edge; as edge) {
-      <div class="row"><span class="rl">Flow ID</span>          <span class="rv">{{edge.id}}</span></div>
-      <div class="row"><span class="rl">Business Process</span> <span class="rv">{{edge.business_process}}</span></div>
-      <div class="row"><span class="rl">Protocol</span>         <span class="rv">{{edge.protocol}}</span></div>
-      <div class="row"><span class="rl">Frequency</span>        <span class="rv">{{edge.frequency}}</span></div>
+      <div class="row"><span class="rl">Flow ID</span>           <span class="rv">{{edge.id}}</span></div>
+      <div class="row"><span class="rl">Business Process</span>  <span class="rv">{{edge.business_process}}</span></div>
+      <div class="row"><span class="rl">Functional Block</span>  <span class="rv">{{edge.functional_block}}</span></div>
+      <div class="row"><span class="rl">Transport Protocol</span><span class="rv">{{edge.transport_protocol}}</span></div>
+      <div class="row"><span class="rl">Exchange Nature</span>   <span class="rv">{{edge.exchange_nature}}</span></div>
+      <div class="row"><span class="rl">Frequency</span>         <span class="rv">{{edge.frequency}}</span></div>
+      <div class="row"><span class="rl">Confidentiality</span>   <span class="rv">{{edge.confidentiality}}</span></div>
+      <div class="row"><span class="rl">PD Protection</span>     <span class="rv">{{edge.personal_data_protection}}</span></div>
+      <div class="row"><span class="rl">CIAT</span>              <span class="rv">{{edge.ciat_computed}}</span></div>
       <div class="row">
         <span class="rl">Criticality</span>
         <span class="rv" [style.color]="cs(edge.criticality)">{{edge.criticality}}</span>

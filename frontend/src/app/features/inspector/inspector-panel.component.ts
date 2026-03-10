@@ -178,7 +178,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   private _groupFlows(
     edges: SubgraphResponse['edges'],
-    sysKey: 'source' | 'target',
+    sysKey: 'source_app' | 'sinc_app',
     sg: SubgraphResponse,
   ) {
     const W: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
@@ -207,7 +207,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const bpFilter    = hasPins ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
-        if (e.target !== nodeId) return false;
+        if (e.sinc_app !== nodeId) return false;
         // In pin mode: only show flows that belong to at least one pinned subgraph
         if (hasPins && !pinnedEdges.has(e.id)) return false;
         // In BP/flow context: only show flows whose primary business_process matches.
@@ -215,7 +215,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),
-      'source', sg,
+      'source_app', sg,
     );
     return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
   }
@@ -227,14 +227,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const bpFilter    = hasPins ? null : this.gs.contextBp();
     const groups = this._groupFlows(
       sg.edges.filter(e => {
-        if (e.source !== nodeId) return false;
+        if (e.source_app !== nodeId) return false;
         // In pin mode: only show flows that belong to at least one pinned subgraph
         if (hasPins && !pinnedEdges.has(e.id)) return false;
         if (bpFilter !== null && e.business_process !== bpFilter) return false;
         if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),
-      'target', sg,
+      'sinc_app', sg,
     );
     return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
   }
@@ -260,8 +260,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   selectFlow(flow: Flow, sg: SubgraphResponse) {
-    const sourceNode = sg.nodes.find(n => n.id === flow.source) as SimNode | undefined;
-    const targetNode = sg.nodes.find(n => n.id === flow.target) as SimNode | undefined;
+    const sourceNode = sg.nodes.find(n => n.id === flow.source_app) as SimNode | undefined;
+    const targetNode = sg.nodes.find(n => n.id === flow.sinc_app) as SimNode | undefined;
     this.gs.selectEdge({ ...flow, sourceNode, targetNode });
   }
 

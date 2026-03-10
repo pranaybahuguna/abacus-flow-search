@@ -62,11 +62,19 @@ class SearchOut(BaseModel):
     candidates: list[CandidateOut]     = []
 
 class SystemOut(BaseModel):
-    id:str; name:str; domain:str; purpose:str; owner:str; tags:list[str]
+    id:str; name:str; domain:str; description:str; owner:str; tags:list[str]
+    legal_entity:Optional[str]=None; major_business_process:list[str]=[]
+    ciat_computed:Optional[str]=None; active:bool=True
+    confidentiality:Optional[str]=None; data_storage_territory:Optional[str]=None
+    pd_sensitivity_declared:bool=False
 
 class FlowOut(BaseModel):
-    id:str; source:str; target:str; data_entity:str
-    business_process:str; protocol:str; criticality:str; frequency:str
+    id:str; source_app:str; sinc_app:str; information_entity:str
+    business_process:str; functional_block:Optional[str]=None
+    message_description:Optional[str]=None; transport_protocol:str
+    criticality:str; frequency:str; exchange_nature:Optional[str]=None
+    ciat_computed:Optional[str]=None; confidentiality:Optional[str]=None
+    personal_data_protection:Optional[str]=None
 
 class SubgraphOut(BaseModel):
     label:str; regulatory:Optional[str]=None
@@ -75,18 +83,37 @@ class SubgraphOut(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _sys(n: dict) -> SystemOut:
-    system_out = SystemOut(id=n["id"], name=n.get("name",""),
-                     domain=n.get("domain",""), purpose=n.get("purpose",""),
-                     owner=n.get("owner",""), tags=n.get("tags",[]))
-    return system_out
+    return SystemOut(
+        id=n.get("main_id", n.get("id","")),
+        name=n.get("name",""), domain=n.get("domain",""),
+        description=n.get("description", n.get("purpose","")),
+        owner=n.get("owner",""), tags=n.get("tags",[]),
+        legal_entity=n.get("legal_entity"),
+        major_business_process=n.get("major_business_process",[]),
+        ciat_computed=n.get("ciat_computed"),
+        active=n.get("active", True),
+        confidentiality=n.get("confidentiality"),
+        data_storage_territory=n.get("data_storage_territory"),
+        pd_sensitivity_declared=n.get("pd_sensitivity_declared", False),
+    )
 
 def _flow(e: dict) -> FlowOut:
-    flow_out = FlowOut(id=e.get("id",""), source=e.get("source",""),
-                   target=e.get("target",""), data_entity=e.get("data_entity",""),
-                   business_process=e.get("business_process",""),
-                   protocol=e.get("protocol",""), criticality=e.get("criticality",""),
-                   frequency=e.get("frequency",""))
-    return flow_out
+    return FlowOut(
+        id=e.get("id",""),
+        source_app=e.get("source_app", e.get("source","")),
+        sinc_app=e.get("sinc_app", e.get("target","")),
+        information_entity=e.get("information_entity", e.get("data_entity","")),
+        business_process=e.get("business_process",""),
+        functional_block=e.get("functional_block"),
+        message_description=e.get("message_description", e.get("description","")),
+        transport_protocol=e.get("transport_protocol", e.get("protocol","")),
+        criticality=e.get("criticality",""),
+        frequency=e.get("frequency",""),
+        exchange_nature=e.get("exchange_nature"),
+        ciat_computed=e.get("ciat_computed"),
+        confidentiality=e.get("confidentiality"),
+        personal_data_protection=e.get("personal_data_protection"),
+    )
 
 def _subgraph_out(sg: dict) -> SubgraphOut:
     subgraph_out = SubgraphOut(label=sg["label"], regulatory=sg.get("regulatory"),
@@ -378,7 +405,7 @@ def get_dependencies(
             all_ids = set(upstream) | set(downstream) | {entity_id}
             sub     = _graph._G.subgraph(all_ids)
             nodes   = [_sys({"id": n, **dict(a)}) for n, a in sub.nodes(data=True)]
-            edges   = [_flow({"source": s, "target": t, **d}) for s, t, d in sub.edges(data=True)]
+            edges   = [_flow({"source_app": s, "sinc_app": t, **d}) for s, t, d in sub.edges(data=True)]
             sys_res = {
                 "resolution": "RESOLVED",
                 "resolved_type": "system",
@@ -480,7 +507,7 @@ def get_dependencies(
         all_ids = set(upstream) | set(downstream) | {resolved_id}
         sub     = _graph._G.subgraph(all_ids)
         nodes   = [_sys({"id": n, **dict(a)}) for n, a in sub.nodes(data=True)]
-        edges   = [_flow({"source": s, "target": t, **d})
+        edges   = [_flow({"source_app": s, "sinc_app": t, **d})
                    for s, t, d in sub.edges(data=True)]
 
         sys_res = {
