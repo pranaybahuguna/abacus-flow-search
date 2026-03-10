@@ -97,7 +97,8 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
           this.gs.contextBp.set(c.name);
         } else if (c.entity_type === 'flow') {
           const edge = sg.edges.find(e => e.id === c.entity_id);
-          this.gs.contextBp.set(edge?.business_process ?? null);
+          const bp = edge?.business_process;
+          this.gs.contextBp.set(bp?.length ? bp[0] : null);
         }
       });
     }
