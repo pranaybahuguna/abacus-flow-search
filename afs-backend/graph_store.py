@@ -144,8 +144,10 @@ class GraphStore:
                     {"id": t, **dict(self._G.nodes[t])},
                 ]
                 edges = [{"source_app": s, "sinc_app": t, **d}]
+                bp = d.get("business_process", [])
+                label = bp[0] if isinstance(bp, list) and bp else (bp or flow_id)
                 return {
-                    "label": d.get("business_process", flow_id),
+                    "label": label,
                     "regulatory": None,
                     "nodes": nodes,
                     "edges": edges,
@@ -225,7 +227,7 @@ class GraphStore:
                 flow = {
                     "information_entity": edata.get("information_entity", ""),
                     "criticality":      edata.get("criticality", "Low"),
-                    "business_process": edata.get("business_process", ""),
+                    "business_process": edata.get("business_process", []),
                     "flow_id":          edata.get("id", ""),
                 }
                 if tgt not in visited:
@@ -253,7 +255,7 @@ class GraphStore:
             {"to_system":   self._G.nodes[tgt].get("name", tgt),
              "to_id":       tgt,
              "information_entity": d.get("information_entity", ""),
-             "process":     d.get("business_process", ""),
+             "process":     ", ".join(d.get("business_process", [])),
              "flow_id":     d.get("id", "")}
             for _, tgt, d in self._G.out_edges(sid, data=True)
             if d.get("criticality") == "Critical"
@@ -309,7 +311,7 @@ class GraphStore:
                 flow = {
                     "information_entity": edata.get("information_entity", ""),
                     "criticality":      edata.get("criticality", "Low"),
-                    "business_process": edata.get("business_process", ""),
+                    "business_process": edata.get("business_process", []),
                     "flow_id":          edata.get("id", ""),
                 }
                 if src not in visited:

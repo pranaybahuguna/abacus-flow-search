@@ -130,7 +130,8 @@ def _reason(node: dict, source_name: str) -> str:
         return f"Connected to {source_name} through the data graph."
     top  = max(flows, key=lambda f: CRIT_WEIGHT.get(f["criticality"],0))
     verb = {1:"directly receives",2:"indirectly receives",3:"transitively receives"}.get(node["hops"],"receives")
-    proc = top.get("business_process","")
+    bp_val = top.get("business_process", [])
+    proc = ", ".join(bp_val) if isinstance(bp_val, list) else bp_val
     s    = f"{verb} {top['information_entity']} from {source_name} ({top['criticality']} criticality)"
     return s + (f" as part of {proc}." if proc else ".")
 

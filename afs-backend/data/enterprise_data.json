@@ -424,7 +424,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
       "information_entity": "Trade Confirmation",
-      "business_process": "Trade Settlement",
+      "business_process": [
+        "Trade Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "Murex sends confirmed trade details to Calypso for post-trade processing and settlement instruction generation",
       "transport_protocol": "MQ / FIX",
@@ -442,7 +444,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
       "information_entity": "Settlement Payment Instruction",
-      "business_process": "Trade Settlement",
+      "business_process": [
+        "Trade Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "Calypso sends settlement payment instructions to Payments Hub for cash leg of securities trades",
       "transport_protocol": "ISO 20022 / REST",
@@ -460,7 +464,9 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_003",
       "information_entity": "SWIFT Payment Message",
-      "business_process": "Cross-Border Payment",
+      "business_process": [
+        "Cross-Border Payment"
+      ],
       "functional_block": "cash management",
       "message_description": "Payments Hub routes cross-border payment instructions to SWIFT Gateway for international dispatch",
       "transport_protocol": "SWIFT MT / ISO 20022",
@@ -478,7 +484,10 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_007",
       "information_entity": "Payment Instruction for Screening",
-      "business_process": "AML and Sanctions Screening",
+      "business_process": [
+        "Cross-Border Payment",
+        "AML and Sanctions Screening"
+      ],
       "functional_block": "compliance & aml",
       "message_description": "All payment instructions are screened by Actimize for sanctions and AML before execution",
       "transport_protocol": "REST API",
@@ -496,7 +505,9 @@
       "source_app": "SYS_002",
       "sinc_app": "SYS_004",
       "information_entity": "Customer Payment Instruction",
-      "business_process": "Retail Payment",
+      "business_process": [
+        "Retail Payment"
+      ],
       "functional_block": "operations",
       "message_description": "Core banking sends customer-initiated payment instructions to Payments Hub for processing",
       "transport_protocol": "ISO 20022",
@@ -514,7 +525,9 @@
       "source_app": "SYS_005",
       "sinc_app": "SYS_004",
       "information_entity": "Treasury Payment Instruction",
-      "business_process": "Treasury Settlement",
+      "business_process": [
+        "Treasury Settlement"
+      ],
       "functional_block": "operations",
       "message_description": "Kondor+ sends FX and money market settlement payments to the Payments Hub",
       "transport_protocol": "ISO 20022",
@@ -532,7 +545,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_010",
       "information_entity": "Trade Positions",
-      "business_process": "Risk Calculation",
+      "business_process": [
+        "Risk Calculation"
+      ],
       "functional_block": "credit risk",
       "message_description": "Murex publishes trade positions to RiskEngine for VaR and capital calculations",
       "transport_protocol": "Database / API",
@@ -550,7 +565,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_010",
       "information_entity": "Securities Positions",
-      "business_process": "Risk Calculation",
+      "business_process": [
+        "Risk Calculation"
+      ],
       "functional_block": "credit risk",
       "message_description": "Calypso sends securities positions to RiskEngine for credit and capital calculations",
       "transport_protocol": "Database / API",
@@ -568,7 +585,10 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_008",
       "information_entity": "Trade Data",
-      "business_process": "Regulatory Reporting",
+      "business_process": [
+        "Regulatory Reporting",
+        "Market Risk Management"
+      ],
       "functional_block": "regulatory reporting",
       "message_description": "Murex feeds trade data into the DataWarehouse for regulatory and management reporting",
       "transport_protocol": "ETL / Database",
@@ -586,7 +606,9 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_008",
       "information_entity": "Payment Transaction Data",
-      "business_process": "Regulatory Reporting",
+      "business_process": [
+        "Regulatory Reporting"
+      ],
       "functional_block": "regulatory reporting",
       "message_description": "Payments Hub feeds all payment transaction records into the DataWarehouse",
       "transport_protocol": "ETL / Database",
@@ -604,7 +626,9 @@
       "source_app": "SYS_002",
       "sinc_app": "SYS_008",
       "information_entity": "Customer Account Data",
-      "business_process": "Regulatory Reporting",
+      "business_process": [
+        "Regulatory Reporting"
+      ],
       "functional_block": "regulatory reporting",
       "message_description": "Core banking sends customer account balances and transaction history to DataWarehouse",
       "transport_protocol": "ETL / Database",
@@ -622,7 +646,9 @@
       "source_app": "SYS_009",
       "sinc_app": "SYS_002",
       "information_entity": "Trade Finance Utilisation",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "Finastra Fusion notifies core banking of letter of credit utilisations and guarantee drawdowns for limit and balance updates",
       "transport_protocol": "REST API",
@@ -640,7 +666,9 @@
       "source_app": "SYS_003",
       "sinc_app": "SYS_005",
       "information_entity": "Inbound SWIFT Payment Confirmation",
-      "business_process": "Nostro Reconciliation",
+      "business_process": [
+        "Nostro Reconciliation"
+      ],
       "functional_block": "operations",
       "message_description": "SWIFT Gateway delivers incoming MT202 and MT910 confirmations to Kondor+ for nostro reconciliation",
       "transport_protocol": "SWIFT MT",
@@ -658,7 +686,10 @@
       "source_app": "SYS_007",
       "sinc_app": "SYS_008",
       "information_entity": "Compliance Alert Data",
-      "business_process": "AML and Sanctions Screening",
+      "business_process": [
+        "AML and Sanctions Screening",
+        "Regulatory Reporting"
+      ],
       "functional_block": "compliance & aml",
       "message_description": "Actimize sends AML alerts and SAR data to DataWarehouse for compliance reporting and analytics",
       "transport_protocol": "ETL / API",
@@ -676,7 +707,9 @@
       "source_app": "SYS_014",
       "sinc_app": "SYS_001",
       "information_entity": "FX Spot and Forward Rate Feed",
-      "business_process": "FX Trade Lifecycle",
+      "business_process": [
+        "FX Trade Lifecycle"
+      ],
       "functional_block": "fx trading",
       "message_description": "Market Data Platform delivers live FX spot and forward rates to Murex for deal pricing and revaluation",
       "transport_protocol": "FIX / REST API",
@@ -694,7 +727,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_005",
       "information_entity": "FX Deal Notification",
-      "business_process": "FX Trade Lifecycle",
+      "business_process": [
+        "FX Trade Lifecycle"
+      ],
       "functional_block": "fx trading",
       "message_description": "Murex notifies Kondor+ of new FX deals for treasury cash and nostro management",
       "transport_protocol": "MQ / ISO 20022",
@@ -712,7 +747,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
       "information_entity": "FX Confirmation Data",
-      "business_process": "FX Trade Lifecycle",
+      "business_process": [
+        "FX Trade Lifecycle"
+      ],
       "functional_block": "fx trading",
       "message_description": "Murex sends FX deal confirmation details to Calypso for matching and settlement instruction generation",
       "transport_protocol": "MQ / FIX",
@@ -730,7 +767,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
       "information_entity": "FX Cash Settlement Instruction",
-      "business_process": "FX Trade Lifecycle",
+      "business_process": [
+        "FX Trade Lifecycle"
+      ],
       "functional_block": "fx trading",
       "message_description": "Calypso sends the FX cash settlement payment instruction to Payments Hub for cross-currency delivery",
       "transport_protocol": "ISO 20022 / REST",
@@ -748,7 +787,9 @@
       "source_app": "SYS_003",
       "sinc_app": "SYS_001",
       "information_entity": "FX SWIFT Confirmation Receipt",
-      "business_process": "FX Trade Lifecycle",
+      "business_process": [
+        "FX Trade Lifecycle"
+      ],
       "functional_block": "fx trading",
       "message_description": "SWIFT Gateway delivers inbound MT300 FX trade confirmation messages from counterparties back to Murex",
       "transport_protocol": "SWIFT MT / FIX",
@@ -766,7 +807,9 @@
       "source_app": "SYS_014",
       "sinc_app": "SYS_001",
       "information_entity": "Derivatives Pricing Curves and Vol Surfaces",
-      "business_process": "Derivatives Lifecycle Management",
+      "business_process": [
+        "Derivatives Lifecycle Management"
+      ],
       "functional_block": "derivatives",
       "message_description": "Market Data Platform delivers interest rate curves, volatility surfaces, and credit spreads to Murex for derivatives pricing and Greeks calculation",
       "transport_protocol": "FIX / REST API",
@@ -784,7 +827,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
       "information_entity": "Derivatives Lifecycle Event",
-      "business_process": "Derivatives Lifecycle Management",
+      "business_process": [
+        "Derivatives Lifecycle Management"
+      ],
       "functional_block": "derivatives",
       "message_description": "Murex sends derivatives lifecycle events \u2014 option exercises, swap resets, early terminations \u2014 to Calypso for processing",
       "transport_protocol": "MQ / FIX",
@@ -802,7 +847,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_010",
       "information_entity": "Options Greeks and Derivatives Sensitivities",
-      "business_process": "Derivatives Lifecycle Management",
+      "business_process": [
+        "Derivatives Lifecycle Management"
+      ],
       "functional_block": "derivatives",
       "message_description": "Murex sends derivatives Greeks and sensitivities to RiskEngine for stress testing and capital calculations",
       "transport_protocol": "Database / API",
@@ -820,7 +867,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
       "information_entity": "Derivatives Cash Flow Payment Instruction",
-      "business_process": "Derivatives Lifecycle Management",
+      "business_process": [
+        "Derivatives Lifecycle Management"
+      ],
       "functional_block": "derivatives",
       "message_description": "Calypso sends coupon payments, option premiums, and termination cash flows to Payments Hub for derivatives settlement",
       "transport_protocol": "ISO 20022 / REST",
@@ -838,7 +887,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
       "information_entity": "Derivatives P&L and Accounting Entries",
-      "business_process": "Derivatives Lifecycle Management",
+      "business_process": [
+        "Derivatives Lifecycle Management"
+      ],
       "functional_block": "derivatives",
       "message_description": "Calypso sends derivatives P&L, fair value, and accounting entries to GL Accounting Engine for IFRS 9 hedge accounting",
       "transport_protocol": "REST API / Database",
@@ -856,7 +907,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_013",
       "information_entity": "Securities Settlement Instruction to CSD",
-      "business_process": "Securities CSD Settlement",
+      "business_process": [
+        "Securities CSD Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "Calypso sends delivery-versus-payment settlement instructions to CREST/Euroclear Gateway for equities and bonds",
       "transport_protocol": "SWIFT MT54x / ISO 20022",
@@ -874,7 +927,9 @@
       "source_app": "SYS_013",
       "sinc_app": "SYS_006",
       "information_entity": "CSD Settlement Confirmation",
-      "business_process": "Securities CSD Settlement",
+      "business_process": [
+        "Securities CSD Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "CREST/Euroclear Gateway returns settlement confirmation or fails-notification back to Calypso",
       "transport_protocol": "SWIFT MT54x / ISO 20022",
@@ -892,7 +947,9 @@
       "source_app": "SYS_013",
       "sinc_app": "SYS_003",
       "information_entity": "Cross-Border DVP SWIFT Settlement Message",
-      "business_process": "Securities CSD Settlement",
+      "business_process": [
+        "Securities CSD Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "CREST/Euroclear Gateway routes cross-border international settlement messages through SWIFT Gateway for Euroclear Bridge transactions",
       "transport_protocol": "SWIFT MT / ISO 20022",
@@ -910,7 +967,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
       "information_entity": "Settled Securities Position Accounting Entry",
-      "business_process": "Securities CSD Settlement",
+      "business_process": [
+        "Securities CSD Settlement"
+      ],
       "functional_block": "securities settlement",
       "message_description": "Calypso sends settled securities position accounting entries to GL Accounting Engine upon CSD settlement confirmation",
       "transport_protocol": "REST API / Database",
@@ -928,7 +987,9 @@
       "source_app": "SYS_014",
       "sinc_app": "SYS_006",
       "information_entity": "Corporate Action Announcement",
-      "business_process": "Corporate Actions Processing",
+      "business_process": [
+        "Corporate Actions Processing"
+      ],
       "functional_block": "corporate actions",
       "message_description": "Market Data Platform delivers corporate action announcements \u2014 dividends, rights issues, stock splits \u2014 to Calypso for entitlement processing",
       "transport_protocol": "REST API / FIX",
@@ -946,7 +1007,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_002",
       "information_entity": "Corporate Action Entitlement Notification",
-      "business_process": "Corporate Actions Processing",
+      "business_process": [
+        "Corporate Actions Processing"
+      ],
       "functional_block": "corporate actions",
       "message_description": "Calypso notifies Temenos T24 of dividend and coupon entitlements for client accounts held in custody",
       "transport_protocol": "REST API",
@@ -964,7 +1027,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
       "information_entity": "Corporate Action Cash Distribution Instruction",
-      "business_process": "Corporate Actions Processing",
+      "business_process": [
+        "Corporate Actions Processing"
+      ],
       "functional_block": "corporate actions",
       "message_description": "Calypso sends corporate action cash distribution payment instructions to Payments Hub for dividend and coupon payments to clients",
       "transport_protocol": "ISO 20022 / REST",
@@ -982,7 +1047,9 @@
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
       "information_entity": "Corporate Action Accounting Entry",
-      "business_process": "Corporate Actions Processing",
+      "business_process": [
+        "Corporate Actions Processing"
+      ],
       "functional_block": "corporate actions",
       "message_description": "Calypso sends corporate action accounting entries to GL Accounting Engine for dividend income, rights, and bonus share recognition",
       "transport_protocol": "REST API / Database",
@@ -1000,7 +1067,9 @@
       "source_app": "SYS_012",
       "sinc_app": "SYS_011",
       "information_entity": "Approved Corporate Borrower Profile",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "KYC & Onboarding Platform sends approved corporate customer profile to LoanIQ to initiate loan origination",
       "transport_protocol": "REST API",
@@ -1018,7 +1087,9 @@
       "source_app": "SYS_011",
       "sinc_app": "SYS_002",
       "information_entity": "Loan Drawdown Instruction",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "LoanIQ sends loan drawdown instructions to Temenos T24 to fund the borrower's account",
       "transport_protocol": "REST API / ISO 20022",
@@ -1036,7 +1107,9 @@
       "source_app": "SYS_002",
       "sinc_app": "SYS_011",
       "information_entity": "Loan Repayment and Interest Receipt Notification",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "Temenos T24 notifies LoanIQ when a loan repayment or interest payment is received from a borrower",
       "transport_protocol": "REST API",
@@ -1054,7 +1127,9 @@
       "source_app": "SYS_011",
       "sinc_app": "SYS_004",
       "information_entity": "Loan Repayment Payment Instruction",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "LoanIQ sends scheduled loan repayment and interest payment instructions to Payments Hub for syndicate lender disbursement",
       "transport_protocol": "ISO 20022 / REST",
@@ -1072,7 +1147,9 @@
       "source_app": "SYS_011",
       "sinc_app": "SYS_010",
       "information_entity": "Loan Credit Risk Exposure",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "LoanIQ sends loan portfolio credit exposures to RiskEngine for counterparty credit risk and Basel capital calculations",
       "transport_protocol": "Database / API",
@@ -1090,7 +1167,9 @@
       "source_app": "SYS_011",
       "sinc_app": "SYS_008",
       "information_entity": "Loan Portfolio and Covenant Data",
-      "business_process": "Loan Origination & Servicing",
+      "business_process": [
+        "Loan Origination & Servicing"
+      ],
       "functional_block": "loan administration",
       "message_description": "LoanIQ feeds loan portfolio data to DataWarehouse for FINREP, Basel, and loan book analytics reporting",
       "transport_protocol": "ETL / Database",
@@ -1108,7 +1187,9 @@
       "source_app": "SYS_012",
       "sinc_app": "SYS_007",
       "information_entity": "Customer AML Screening Request",
-      "business_process": "Customer Onboarding & KYC",
+      "business_process": [
+        "Customer Onboarding & KYC"
+      ],
       "functional_block": "client onboarding",
       "message_description": "KYC & Onboarding Platform submits new customer or counterparty details to Actimize for AML and sanctions screening at onboarding",
       "transport_protocol": "REST API",
@@ -1126,7 +1207,9 @@
       "source_app": "SYS_007",
       "sinc_app": "SYS_012",
       "information_entity": "AML and Sanctions Clearance",
-      "business_process": "Customer Onboarding & KYC",
+      "business_process": [
+        "Customer Onboarding & KYC"
+      ],
       "functional_block": "client onboarding",
       "message_description": "Actimize returns AML clearance or alert status to KYC & Onboarding Platform to gate the onboarding approval workflow",
       "transport_protocol": "REST API",
@@ -1144,7 +1227,9 @@
       "source_app": "SYS_012",
       "sinc_app": "SYS_002",
       "information_entity": "New Customer Account Creation Request",
-      "business_process": "Customer Onboarding & KYC",
+      "business_process": [
+        "Customer Onboarding & KYC"
+      ],
       "functional_block": "client onboarding",
       "message_description": "KYC & Onboarding Platform instructs Temenos T24 to create the new customer record and account upon successful onboarding",
       "transport_protocol": "REST API",
@@ -1162,7 +1247,9 @@
       "source_app": "SYS_002",
       "sinc_app": "SYS_008",
       "information_entity": "New Customer KYC Profile for Regulatory Reporting",
-      "business_process": "Customer Onboarding & KYC",
+      "business_process": [
+        "Customer Onboarding & KYC"
+      ],
       "functional_block": "client onboarding",
       "message_description": "Temenos T24 feeds newly onboarded customer data to DataWarehouse for CDD regulatory reporting and analytics",
       "transport_protocol": "ETL / Database",
@@ -1180,7 +1267,9 @@
       "source_app": "SYS_009",
       "sinc_app": "SYS_003",
       "information_entity": "SWIFT Documentary Credit Message MT700/MT710",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "Finastra Fusion sends MT700 Letter of Credit issuance and MT710 advisement messages through SWIFT Gateway to correspondent and advising banks",
       "transport_protocol": "SWIFT MT",
@@ -1198,7 +1287,9 @@
       "source_app": "SYS_003",
       "sinc_app": "SYS_009",
       "information_entity": "Inbound Documentary SWIFT Message",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "SWIFT Gateway delivers inbound documentary credit messages \u2014 MT710 advisements, MT730 acknowledgements, MT750 discrepancy notices \u2014 to Finastra Fusion",
       "transport_protocol": "SWIFT MT",
@@ -1216,7 +1307,9 @@
       "source_app": "SYS_009",
       "sinc_app": "SYS_007",
       "information_entity": "Trade Finance Party Screening Request",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "Finastra Fusion submits LC applicant, beneficiary, and goods details to Actimize for sanctions and dual-use goods screening",
       "transport_protocol": "REST API",
@@ -1234,7 +1327,9 @@
       "source_app": "SYS_009",
       "sinc_app": "SYS_004",
       "information_entity": "Trade Finance Settlement Payment",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "Finastra Fusion sends LC payment instructions to Payments Hub when compliant documents are presented and payment is authorised",
       "transport_protocol": "ISO 20022 / REST",
@@ -1252,7 +1347,9 @@
       "source_app": "SYS_009",
       "sinc_app": "SYS_008",
       "information_entity": "Trade Finance Portfolio Reporting Data",
-      "business_process": "Trade Finance Documentary Credit",
+      "business_process": [
+        "Trade Finance Documentary Credit"
+      ],
       "functional_block": "trade finance",
       "message_description": "Finastra Fusion feeds trade finance portfolio data to DataWarehouse for regulatory and MIS reporting",
       "transport_protocol": "ETL / Database",
@@ -1270,7 +1367,9 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_005",
       "information_entity": "Real-time Payment Outflow Feed",
-      "business_process": "Intraday Liquidity Management",
+      "business_process": [
+        "Intraday Liquidity Management"
+      ],
       "functional_block": "liquidity management",
       "message_description": "Payments Hub sends real-time payment outflow data to Kondor+ for intraday nostro cash position management",
       "transport_protocol": "REST API / ISO 20022",
@@ -1288,7 +1387,9 @@
       "source_app": "SYS_014",
       "sinc_app": "SYS_005",
       "information_entity": "FX Rate for Nostro Revaluation",
-      "business_process": "Intraday Liquidity Management",
+      "business_process": [
+        "Intraday Liquidity Management"
+      ],
       "functional_block": "liquidity management",
       "message_description": "Market Data Platform provides live FX rates to Kondor+ for intraday nostro balance revaluation into base currency",
       "transport_protocol": "FIX / REST API",
@@ -1306,7 +1407,9 @@
       "source_app": "SYS_005",
       "sinc_app": "SYS_010",
       "information_entity": "Intraday Liquidity Position",
-      "business_process": "Intraday Liquidity Management",
+      "business_process": [
+        "Intraday Liquidity Management"
+      ],
       "functional_block": "liquidity management",
       "message_description": "Kondor+ sends intraday liquidity positions to RiskEngine for LCR and intraday liquidity risk monitoring",
       "transport_protocol": "Database / API",
@@ -1324,7 +1427,9 @@
       "source_app": "SYS_005",
       "sinc_app": "SYS_008",
       "information_entity": "Nostro Balance and Intraday Liquidity Report",
-      "business_process": "Intraday Liquidity Management",
+      "business_process": [
+        "Intraday Liquidity Management"
+      ],
       "functional_block": "liquidity management",
       "message_description": "Kondor+ sends nostro balances and intraday liquidity metrics to DataWarehouse for regulatory liquidity reporting",
       "transport_protocol": "ETL / Database",
@@ -1342,7 +1447,9 @@
       "source_app": "SYS_014",
       "sinc_app": "SYS_010",
       "information_entity": "Market Risk Scenarios and Stress Curves",
-      "business_process": "Market Risk Management",
+      "business_process": [
+        "Market Risk Management"
+      ],
       "functional_block": "market risk",
       "message_description": "Market Data Platform delivers historical and hypothetical market risk scenarios and stressed curves to RiskEngine for VaR and FRTB calculations",
       "transport_protocol": "FIX / REST API",
@@ -1360,7 +1467,9 @@
       "source_app": "SYS_010",
       "sinc_app": "SYS_008",
       "information_entity": "Risk Metrics and Regulatory Capital Report",
-      "business_process": "Market Risk Management",
+      "business_process": [
+        "Market Risk Management"
+      ],
       "functional_block": "market risk",
       "message_description": "RiskEngine sends VaR, Expected Shortfall, PFE, and regulatory capital metrics to DataWarehouse for regulatory submission and management reporting",
       "transport_protocol": "ETL / Database",
@@ -1378,7 +1487,9 @@
       "source_app": "SYS_010",
       "sinc_app": "SYS_001",
       "information_entity": "VaR Limit Breach Alert",
-      "business_process": "Market Risk Management",
+      "business_process": [
+        "Market Risk Management"
+      ],
       "functional_block": "market risk",
       "message_description": "RiskEngine sends real-time VaR and risk limit breach alerts back to Murex to trigger trading desk notifications and position restrictions",
       "transport_protocol": "REST API",
@@ -1396,7 +1507,9 @@
       "source_app": "SYS_001",
       "sinc_app": "SYS_015",
       "information_entity": "Trading Book P&L and Fair Value Accounting",
-      "business_process": "Market Risk Management",
+      "business_process": [
+        "Market Risk Management"
+      ],
       "functional_block": "market risk",
       "message_description": "Murex sends trading book daily P&L and fair value movements to GL Accounting Engine for financial reporting",
       "transport_protocol": "Database / API",
@@ -1414,7 +1527,9 @@
       "source_app": "SYS_002",
       "sinc_app": "SYS_004",
       "information_entity": "Cross-Border Payment Initiation",
-      "business_process": "Cross-Border Payment",
+      "business_process": [
+        "Cross-Border Payment"
+      ],
       "functional_block": "cash management",
       "message_description": "Temenos T24 sends cross-border payment instructions to Payments Hub for international routing",
       "transport_protocol": "ISO 20022",
@@ -1432,7 +1547,9 @@
       "source_app": "SYS_005",
       "sinc_app": "SYS_004",
       "information_entity": "Cross-Border Treasury Payment Instruction",
-      "business_process": "Cross-Border Payment",
+      "business_process": [
+        "Cross-Border Payment"
+      ],
       "functional_block": "cash management",
       "message_description": "Kondor+ sends cross-border FX and money market settlement payment instructions to Payments Hub",
       "transport_protocol": "ISO 20022",
@@ -1450,7 +1567,9 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_007",
       "information_entity": "Cross-Border Payment Sanctions Screening",
-      "business_process": "Cross-Border Payment",
+      "business_process": [
+        "Cross-Border Payment"
+      ],
       "functional_block": "cash management",
       "message_description": "Payments Hub submits cross-border payment instructions to Actimize for mandatory sanctions and AML screening before SWIFT dispatch",
       "transport_protocol": "REST API",
@@ -1468,7 +1587,10 @@
       "source_app": "SYS_004",
       "sinc_app": "SYS_003",
       "information_entity": "Trade Settlement SWIFT Dispatch",
-      "business_process": "Trade Settlement",
+      "business_process": [
+        "Trade Settlement",
+        "Cross-Border Payment"
+      ],
       "functional_block": "securities settlement",
       "message_description": "Payments Hub dispatches trade settlement payment instructions to SWIFT Gateway for MT202 interbank settlement",
       "transport_protocol": "SWIFT MT / ISO 20022",
@@ -1486,7 +1608,10 @@
       "source_app": "SYS_007",
       "sinc_app": "SYS_008",
       "information_entity": "AML Regulatory Reporting Data",
-      "business_process": "Regulatory Reporting",
+      "business_process": [
+        "AML and Sanctions Screening",
+        "Regulatory Reporting"
+      ],
       "functional_block": "regulatory reporting",
       "message_description": "Actimize sends AML alerts and compliance decision data to the DataWarehouse for regulatory reporting and audit",
       "transport_protocol": "REST API",

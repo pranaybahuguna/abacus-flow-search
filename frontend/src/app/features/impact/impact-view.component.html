@@ -168,7 +168,7 @@
               <span class="vf-c" [style.color]="sevColor(sys.severity)">●</span>
               <span class="vf-d">{{f.information_entity}}</span>
               <span class="vf-cr">{{f.criticality}}</span>
-              <span class="vf-p" *ngIf="f.business_process">{{f.business_process}}</span>
+              <span class="vf-p" *ngIf="f.business_process?.length">{{f.business_process.join(', ')}}</span>
             </div>
           </div>
 

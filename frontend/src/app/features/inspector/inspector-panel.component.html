@@ -157,7 +157,7 @@
     <!-- EDGE detail -->
     @if (sel.kind==='edge' && sel.edge; as edge) {
       <div class="row"><span class="rl">Flow ID</span>           <span class="rv">{{edge.id}}</span></div>
-      <div class="row"><span class="rl">Business Process</span>  <span class="rv">{{edge.business_process}}</span></div>
+      <div class="row"><span class="rl">Business Process</span>  <span class="rv">{{edge.business_process?.join(', ')}}</span></div>
       <div class="row"><span class="rl">Functional Block</span>  <span class="rv">{{edge.functional_block}}</span></div>
       <div class="row"><span class="rl">Transport Protocol</span><span class="rv">{{edge.transport_protocol}}</span></div>
       <div class="row"><span class="rl">Exchange Nature</span>   <span class="rv">{{edge.exchange_nature}}</span></div>

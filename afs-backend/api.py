@@ -70,7 +70,7 @@ class SystemOut(BaseModel):
 
 class FlowOut(BaseModel):
     id:str; source_app:str; sinc_app:str; information_entity:str
-    business_process:str; functional_block:Optional[str]=None
+    business_process:list[str]=[]; functional_block:Optional[str]=None
     message_description:Optional[str]=None; transport_protocol:str
     criticality:str; frequency:str; exchange_nature:Optional[str]=None
     ciat_computed:Optional[str]=None; confidentiality:Optional[str]=None
@@ -103,7 +103,7 @@ def _flow(e: dict) -> FlowOut:
         source_app=e.get("source_app", e.get("source","")),
         sinc_app=e.get("sinc_app", e.get("target","")),
         information_entity=e.get("information_entity", e.get("data_entity","")),
-        business_process=e.get("business_process",""),
+        business_process=e.get("business_process",[]),
         functional_block=e.get("functional_block"),
         message_description=e.get("message_description", e.get("description","")),
         transport_protocol=e.get("transport_protocol", e.get("protocol","")),

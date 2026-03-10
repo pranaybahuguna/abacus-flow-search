@@ -211,7 +211,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         // In pin mode: only show flows that belong to at least one pinned subgraph
         if (hasPins && !pinnedEdges.has(e.id)) return false;
         // In BP/flow context: only show flows whose primary business_process matches.
-        if (bpFilter !== null && e.business_process !== bpFilter) return false;
+        if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
         if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),
@@ -230,7 +230,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         if (e.source_app !== nodeId) return false;
         // In pin mode: only show flows that belong to at least one pinned subgraph
         if (hasPins && !pinnedEdges.has(e.id)) return false;
-        if (bpFilter !== null && e.business_process !== bpFilter) return false;
+        if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
         if (matchIds === null) return true;
         return matchIds.has(e.id);
       }),

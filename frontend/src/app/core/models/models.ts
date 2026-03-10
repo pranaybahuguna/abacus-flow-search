@@ -23,7 +23,7 @@ export interface System {
 
 export interface Flow {
   id: string; source_app: string; sinc_app: string;
-  information_entity: string; business_process: string;
+  information_entity: string; business_process: string[];
   functional_block?: string;
   message_description?: string;
   transport_protocol: string; criticality: Criticality; frequency: string;
@@ -69,7 +69,7 @@ export interface SimEdge extends Flow {
 // ── Impact ────────────────────────────────────────────────────────────────────
 export interface ViaFlow {
   information_entity: string; criticality: string;
-  business_process: string; flow_id: string;
+  business_process: string[]; flow_id: string;
 }
 
 export interface AffectedSystem {
