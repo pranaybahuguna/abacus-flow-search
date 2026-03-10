@@ -37,7 +37,7 @@ CHROMA_PATH = Path("data/chroma_db")
 with open(DATA_PATH) as f:
     raw = json.load(f)
 
-snames = {s["id"]: s["name"] for s in raw["systems"]}
+snames = {s["main_id"]: s["name"] for s in raw["systems"]}
 
 # ── Build LangChain Documents ──────────────────────────────────────────────────
 # Each Document has:
@@ -53,13 +53,13 @@ documents: list[Document] = []
 # Systems
 for s in raw["systems"]:
     text = s.get("embed_text") or (
-        f"{s['name']} is a {s['domain']} system. {s.get('purpose', '')} "
+        f"{s['name']} is a {s['domain']} system. {s.get('description', '')} "
         f"Tags: {', '.join(s.get('tags', []))}"
     )
     documents.append(Document(
         page_content = text,
         metadata     = {
-            "entity_id":   s["id"],
+            "entity_id":   s["main_id"],
             "entity_type": "system",
             "name":        s["name"],
             "domain":      s["domain"],
@@ -68,11 +68,11 @@ for s in raw["systems"]:
 
 # Flows — embed_text includes source/target names so fuzzy queries work
 for f in raw["flows"]:
-    src, tgt = snames.get(f["source"], ""), snames.get(f["target"], "")
+    src, tgt = snames.get(f["source_app"], ""), snames.get(f["sinc_app"], "")
     text = f.get("embed_text") or (
         f"Data flow from {src} to {tgt}. "
-        f"Sends {f['data_entity']} as part of {f['business_process']}. "
-        f"Protocol {f['protocol']}. Criticality {f['criticality']}."
+        f"Sends {f['information_entity']} as part of {f['business_process']}. "
+        f"Protocol {f['transport_protocol']}. Criticality {f['criticality']}."
     )
     documents.append(Document(
         page_content = text,
