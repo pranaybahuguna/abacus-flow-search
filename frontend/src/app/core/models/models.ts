@@ -19,6 +19,9 @@ export interface System {
   confidentiality?: string;
   data_storage_territory?: string;
   pd_sensitivity_declared?: string;
+  /** Pre-computed layout position — present only on full-graph responses. */
+  layout_x?: number;
+  layout_y?: number;
 }
 
 export interface Flow {

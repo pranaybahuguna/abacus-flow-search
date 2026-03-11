@@ -128,6 +128,9 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
             // ev.x/ev.y are screen-space with D3's offset applied → invert to sim
             const [mx, my] = this._transform.invert([ev.x, ev.y]);
             node.fx = mx; node.fy = my;
+            // When there is no simulation (pre-laid full graph), update x/y
+            // directly and request a frame — there is no tick loop to do it.
+            if (!this.sim) { node.x = mx; node.y = my; this._scheduleFrame(); }
           }
         })
         .on('end', (ev: any) => {
@@ -171,6 +174,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
 
   private _render(sg: SubgraphResponse) {
     this.sim?.stop();
+    this.sim = null;
     if (this._raf) { cancelAnimationFrame(this._raf); this._raf = null; }
 
     const canvas = this.canvasRef.nativeElement;
@@ -184,13 +188,21 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     canvas.height = H * dpr;
     this._ctx = canvas.getContext('2d');
 
-    // Reset zoom to identity for each new subgraph
+    // Reset zoom to identity; will be overridden by _fitToViewport for large graphs
     this._transform = d3.zoomIdentity;
     if (this._zoom) d3.select(canvas).call(this._zoom.transform, d3.zoomIdentity);
 
+    // ── Detect pre-computed layout (full-graph endpoint) ───────────────────
+    // When layout_x/layout_y are present on nodes the backend has already done
+    // the positioning. We skip D3 force simulation entirely and just fit the
+    // bounding box into the viewport — instant rendering for 4-5 k nodes.
+    const hasLayout = sg.nodes.length > 0 && sg.nodes[0].layout_x != null;
+
     // ── Nodes & edges ──────────────────────────────────────────────────────
     const nodes: SimNode[] = sg.nodes.map(n => ({
-      ...n, x: W/2 + (Math.random()-.5)*480, y: H/2 + (Math.random()-.5)*480,
+      ...n,
+      x: hasLayout ? n.layout_x! : W/2 + (Math.random()-.5)*480,
+      y: hasLayout ? n.layout_y! : H/2 + (Math.random()-.5)*480,
       vx:0, vy:0, fx:null, fy:null,
     }));
     const byId = new Map(nodes.map(n => [n.id, n]));
@@ -216,7 +228,14 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       this._edgeFactor.set(e.id, n === 1 ? 0.16 : (i - (n-1)/2) * 0.22);
     });
 
-    // ── Adaptive simulation ────────────────────────────────────────────────
+    // ── Pre-laid graph: fit to viewport, no simulation ─────────────────────
+    if (hasLayout) {
+      this._fitToViewport();
+      this._scheduleFrame();
+      return;
+    }
+
+    // ── Adaptive simulation (entity-specific queries only) ─────────────────
     // Thresholds are generous — BP queries are no longer capped at 80 nodes
     // so graphs with 100–300+ systems must still settle in reasonable time.
     const n = nodes.length;
@@ -245,6 +264,33 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       let ticks = 0;
       this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
     }
+  }
+
+  // ── Fit all nodes into the current viewport ────────────────────────────────
+
+  private _fitToViewport() {
+    if (!this._zoom) return;
+    const canvas = this.canvasRef.nativeElement;
+    const W = canvas.clientWidth || 900, H = canvas.clientHeight || 560;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const n of this._nodes) {
+      if (n.x != null && n.y != null) {
+        minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+        minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+      }
+    }
+    if (!isFinite(minX)) return;
+
+    const pad  = 60;
+    const extW = maxX - minX || 1, extH = maxY - minY || 1;
+    const k    = Math.min((W - pad*2) / extW, (H - pad*2) / extH, 4);
+    const tx   = (W - k * (minX + maxX)) / 2;
+    const ty   = (H - k * (minY + maxY)) / 2;
+
+    const t = d3.zoomIdentity.translate(tx, ty).scale(k);
+    this._transform = t;
+    d3.select(canvas).call(this._zoom.transform, t);
   }
 
   // ── Draw ──────────────────────────────────────────────────────────────────
@@ -311,6 +357,25 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   ) {
     const s = e.source as SimNode, t = e.target as SimNode;
     if (s.x == null || t.x == null) return;
+
+    const k = this._transform.k;
+
+    // ── LOD: at very low zoom draw a simple straight line (no Bezier / label)
+    if (k < 0.35) {
+      const color = CRIT_STROKE[e.criticality] ?? '#6b7280';
+      let op = sel ? (sel.kind === 'edge' ? (sel.edge?.id === e.id ? 0.9 : 0.08)
+                                           : (((e.source as SimNode).id === sel.node?.id ||
+                                               (e.target as SimNode).id === sel.node?.id) ? 0.9 : 0.08))
+                   : 0.35;
+      ctx.save();
+      ctx.globalAlpha = op;
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = 0.6;
+      ctx.beginPath(); ctx.moveTo(s.x!, s.y!); ctx.lineTo(t.x!, t.y!);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
 
     // Opacity
     let op = 0.78;
@@ -383,6 +448,41 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   ) {
     if (n.x == null || n.y == null) return;
 
+    const k  = this._transform.k;
+    const st = ds(n.domain);
+    const x  = n.x!, y = n.y!;
+
+    // ── LOD: dot at very low zoom ──────────────────────────────────────────
+    if (k < 0.18) {
+      const isSelected = sel?.kind === 'node' && sel.node?.id === n.id;
+      ctx.save();
+      ctx.globalAlpha = sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.2) : 0.85;
+      ctx.beginPath();
+      ctx.arc(x, y, isSelected ? 7 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? st.accent : (n.active === false ? '#ef4444' : st.accent);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    // ── LOD: small coloured box, no text ──────────────────────────────────
+    if (k < 0.55) {
+      const bw = 28, bh = 18;
+      const isSelected = sel?.kind === 'node' && sel.node?.id === n.id;
+      ctx.save();
+      ctx.globalAlpha = sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.15) : 0.9;
+      this._rRect(ctx, x - bw/2, y - bh/2, bw, bh, 4);
+      ctx.fillStyle = st.bg; ctx.fill();
+      ctx.strokeStyle = isSelected ? st.accent : st.border;
+      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.stroke();
+      this._rRect(ctx, x - bw/2, y - bh/2, 3, bh, 2);
+      ctx.fillStyle = st.accent; ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    // ── Full card (standard zoom) ──────────────────────────────────────────
     let op = 1;
     if (sel) {
       if (sel.kind === 'node') {
@@ -396,8 +496,6 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    const st        = ds(n.domain);
-    const x = n.x!, y = n.y!;
     const isSelected  = sel?.kind === 'node' && sel.node?.id === n.id;
     const isNeighbour = sel?.kind === 'node' && neighborIds.has(n.id);
 

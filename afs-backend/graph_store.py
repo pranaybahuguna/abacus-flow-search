@@ -25,13 +25,72 @@ USAGE
   result = g.downstream_bfs("SYS_004", max_hops=3)
 """
 from __future__ import annotations
-import json, pickle
-from collections import deque
+import json, math, pickle
+from collections import deque, defaultdict
 from pathlib     import Path
 import networkx as nx
 
 DATA_PATH  = Path("data/enterprise_data.json")
 GRAPH_PATH = Path("data/graph.pkl")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  LAYOUT  (pre-computed once at build time; used by the full-graph endpoint)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _compute_layout(G: nx.MultiDiGraph,
+                    W: float = 10_000, H: float = 7_000) -> dict[str, tuple[float, float]]:
+    """
+    Domain-based phyllotaxis layout — runs once during build_graph().
+
+    Strategy
+    --------
+    1. Group all systems by domain.
+    2. Arrange domain clusters in a rectangular grid inside a W×H canvas.
+    3. Within each cluster place nodes using the golden-angle (phyllotaxis)
+       spiral, which distributes points uniformly inside a disc with no
+       empty rings or overcrowded centres.
+
+    Result: every node gets a deterministic (x, y) that clusters systems
+    by business domain while spacing clusters far enough apart to avoid
+    edge crossings at the inter-domain level.  The frontend can render
+    4-5 k nodes at a glance (dots at low zoom → full cards when zoomed in)
+    without ever running a force simulation.
+    """
+    GOLDEN = 2.39996323          # golden angle ≈ 137.508° in radians
+
+    domain_nodes: dict[str, list[str]] = defaultdict(list)
+    for nid, attrs in G.nodes(data=True):
+        domain_nodes[attrs.get("domain", "DEFAULT")].append(nid)
+
+    domains = sorted(domain_nodes.keys())
+    nd      = len(domains)
+    cols    = math.ceil(math.sqrt(nd * 1.4))   # slightly wider than square
+    rows    = math.ceil(nd / cols)
+    cw, ch  = W / cols, H / rows               # cell size per domain cluster
+
+    positions: dict[str, tuple[float, float]] = {}
+
+    for di, domain in enumerate(domains):
+        nodes  = domain_nodes[domain]
+        n      = len(nodes)
+        cx     = (di % cols + 0.5) * cw
+        cy     = (di // cols + 0.5) * ch
+
+        if n == 1:
+            positions[nodes[0]] = (cx, cy)
+            continue
+
+        # Phyllotaxis: radius grows as sqrt(i) so area density stays constant
+        max_r   = min(cw, ch) * 0.42
+        spacing = (max_r / math.sqrt(n)) * 1.8
+        for i, nid in enumerate(nodes):
+            r     = spacing * math.sqrt(i + 0.5)
+            theta = GOLDEN * i
+            positions[nid] = (cx + r * math.cos(theta),
+                              cy + r * math.sin(theta))
+
+    return positions
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,10 +120,15 @@ def build_graph() -> nx.MultiDiGraph:
     G.graph["bp_index"] = bp_index
 
     # Flows → directed edges
+
     for flow in raw["flows"]:
         attrs = {k: v for k, v in flow.items()
                  if k not in ("source_app", "sinc_app", "embed_text")}
         G.add_edge(flow["source_app"], flow["sinc_app"], **attrs)
+
+    # Pre-compute full-graph layout (domain phyllotaxis) — used by /api/graph/full
+    # so the browser never has to run a force simulation on thousands of nodes.
+    G.graph["layout"] = _compute_layout(G)
 
     GRAPH_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(GRAPH_PATH, "wb") as f:
@@ -195,7 +259,22 @@ class GraphStore:
         return sg
 
     def full_graph(self) -> dict:
-        return _export(self._G, "Full Enterprise Map")
+        """
+        Returns the complete enterprise graph with pre-computed layout positions
+        (layout_x, layout_y) attached to every node.  The frontend uses these
+        to render all nodes immediately without running a D3 force simulation.
+        """
+        layout = self._G.graph.get("layout", {})
+        nodes  = []
+        for nid, attrs in self._G.nodes(data=True):
+            d = {"id": nid, **dict(attrs)}
+            if nid in layout:
+                d["layout_x"], d["layout_y"] = layout[nid]
+            nodes.append(d)
+        edges = [{"source_app": s, "sinc_app": t, **d}
+                 for s, t, d in self._G.edges(data=True)]
+        return {"label": "Full Enterprise Map", "regulatory": None,
+                "nodes": nodes, "edges": edges}
 
     # ── Impact traversal ──────────────────────────────────────────────────────
 

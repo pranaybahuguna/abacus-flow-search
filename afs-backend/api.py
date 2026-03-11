@@ -67,6 +67,9 @@ class SystemOut(BaseModel):
     ciat_computed:Optional[str]=None; active:bool=True
     confidentiality:Optional[str]=None; data_storage_territory:Optional[str]=None
     pd_sensitivity_declared:Optional[str]=None
+    # Pre-computed layout coordinates — present only on full-graph responses.
+    # When set, the frontend renders directly without running a D3 simulation.
+    layout_x:Optional[float]=None; layout_y:Optional[float]=None
 
 class FlowOut(BaseModel):
     id:str; source_app:str; sinc_app:str; information_entity:str
@@ -103,6 +106,8 @@ def _sys(n: dict) -> SystemOut:
         confidentiality=n.get("confidentiality"),
         data_storage_territory=n.get("data_storage_territory"),
         pd_sensitivity_declared=n.get("pd_sensitivity_declared", False),
+        layout_x=n.get("layout_x"),
+        layout_y=n.get("layout_y"),
     )
 
 def _flow(e: dict) -> FlowOut:
