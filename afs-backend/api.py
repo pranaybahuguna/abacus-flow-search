@@ -82,8 +82,11 @@ class SubgraphOut(BaseModel):
     truncated:bool=False; total_nodes:Optional[int]=None
 
 # Maximum nodes the D3 canvas will receive in one subgraph response.
-# Above this the graph becomes unrenderable; the UI shows a warning instead.
-MAX_GRAPH_NODES = 80
+# Cap applied ONLY to the full-graph endpoint.
+# Entity-specific queries (system, BP, flow) are never capped — a business
+# process may legitimately involve hundreds of systems and truncating it would
+# give a misleading picture.
+FULL_GRAPH_MAX_NODES = 500
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -120,15 +123,24 @@ def _flow(e: dict) -> FlowOut:
         personal_data_protection=e.get("personal_data_protection"),
     )
 
-def _subgraph_out(sg: dict) -> SubgraphOut:
+def _subgraph_out(sg: dict, max_nodes: int | None = None) -> SubgraphOut:
+    """
+    Serialise a raw graph dict into a SubgraphOut Pydantic model.
+
+    max_nodes: when set, caps the number of nodes returned and marks the
+               response as truncated so the UI can warn the user.
+               Pass None (default) for entity-specific queries — business
+               processes, system neighbourhoods, and flow subgraphs are
+               naturally bounded and should never be silently truncated.
+    """
     all_nodes = sg["nodes"]
     total     = len(all_nodes)
-    truncated = total > MAX_GRAPH_NODES
+    truncated = max_nodes is not None and total > max_nodes
     if truncated:
-        # Keep the first MAX_GRAPH_NODES nodes and only edges whose both
-        # endpoints are in that set, so the graph stays self-consistent.
-        kept_ids  = {n.get("main_id", n.get("id","")) for n in all_nodes[:MAX_GRAPH_NODES]}
-        all_nodes = all_nodes[:MAX_GRAPH_NODES]
+        # Keep the first max_nodes nodes and only edges whose both endpoints
+        # are in that kept set, so the graph stays self-consistent.
+        kept_ids  = {n.get("main_id", n.get("id","")) for n in all_nodes[:max_nodes]}
+        all_nodes = all_nodes[:max_nodes]
         sg_edges  = [e for e in sg["edges"]
                      if e.get("source_app","") in kept_ids
                      and e.get("sinc_app","")   in kept_ids]
@@ -211,7 +223,9 @@ def get_subgraph(
 
 @app.get("/api/graph/full", response_model=SubgraphOut)
 def get_full_graph():
-    return _subgraph_out(_graph.full_graph())
+    # Full graph can be enormous — cap it so the browser stays responsive.
+    # Entity-specific queries (/api/graph) are never capped.
+    return _subgraph_out(_graph.full_graph(), max_nodes=FULL_GRAPH_MAX_NODES)
 
 
 @app.get("/api/impact")

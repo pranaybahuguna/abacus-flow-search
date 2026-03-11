@@ -217,13 +217,25 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     });
 
     // ── Adaptive simulation ────────────────────────────────────────────────
+    // Thresholds are generous — BP queries are no longer capped at 80 nodes
+    // so graphs with 100–300+ systems must still settle in reasonable time.
     const n = nodes.length;
-    const alphaDecay = n < 20 ? 0.013 : n < 50 ? 0.028 : 0.055;
-    const maxTicks   = n < 20 ? 0     : n < 50 ? 300   : 120;
+    const alphaDecay = n < 20  ? 0.013
+                     : n < 80  ? 0.022
+                     : n < 200 ? 0.035
+                     :           0.055;
+    const maxTicks   = n < 20  ? 0
+                     : n < 80  ? 400
+                     : n < 200 ? 250
+                     :           150;
+    // Repulsion: weaker for very large graphs so they don't explode outward
+    const charge     = n < 50  ? -1600
+                     : n < 150 ? -900
+                     :           -500;
 
     this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
       .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(270).strength(.38))
-      .force('charge',  d3.forceManyBody<SimNode>().strength(n > 40 ? -900 : -1600))
+      .force('charge',  d3.forceManyBody<SimNode>().strength(charge))
       .force('center',  d3.forceCenter(W/2, H/2))
       .force('collide', d3.forceCollide<SimNode>(115))
       .alphaDecay(alphaDecay)
