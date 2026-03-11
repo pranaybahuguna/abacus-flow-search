@@ -95,7 +95,7 @@
                 <span class="pw-icon">↔</span>
                 <span class="pw-name">{{pw.sysName}}</span>
                 <span class="pw-ct">{{pwFlows.length}}</span>
-                <button class="pw-close" (click)="pairwiseSys.set(null)" title="Close pairwise view">×</button>
+                <button class="pw-close" (click)="closePairwise()" title="Close pairwise view">×</button>
               </div>
               <div class="pw-list">
                 <div *ngFor="let f of pwFlows; trackBy: trackPairFlow"
@@ -124,7 +124,7 @@
           </div>
           <div *ngFor="let grp of inGroups; trackBy: trackGroup" class="fg">
             <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
-                 (click)="selectPairwiseSys(grp); $event.stopPropagation()"
+                 (click)="togglePairwise(grp, sg, node.id); $event.stopPropagation()"
                  title="Click to see all connections between these two systems">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
@@ -159,7 +159,7 @@
           </div>
           <div *ngFor="let grp of outGroups; trackBy: trackGroup" class="fg">
             <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
-                 (click)="selectPairwiseSys(grp); $event.stopPropagation()"
+                 (click)="togglePairwise(grp, sg, node.id); $event.stopPropagation()"
                  title="Click to see all connections between these two systems">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>

@@ -76,6 +76,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
           this.flowMatchIds.set(null);
           this.searching.set(false);
           this.pairwiseSys.set(null);
+          this.gs.clearPairwiseFocus();
         }
         lastId = id;
       }
@@ -84,6 +85,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         this.flowSearch.set('');
         this.flowMatchIds.set(null);
         this.searching.set(false);
+        this.pairwiseSys.set(null);
+        this.gs.clearPairwiseFocus();
       }
     });
 
@@ -274,21 +277,42 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   // ── Pairwise (bidirectional) flow helpers ─────────────────────────────────
 
-  /** Toggle pairwise view for a system group. Click same system again to dismiss. */
-  selectPairwiseSys(grp: { sysId: string; sysName: string }) {
+  /**
+   * Toggle pairwise view for a system group. Activates canvas focus (dims everything
+   * except the two nodes + their edges). Click same system again to dismiss.
+   */
+  togglePairwise(grp: { sysId: string; sysName: string }, sg: SubgraphResponse, nodeId: string) {
     const cur = this.pairwiseSys();
-    this.pairwiseSys.set(cur?.sysId === grp.sysId ? null : { sysId: grp.sysId, sysName: grp.sysName });
+    if (cur?.sysId === grp.sysId) {
+      this.pairwiseSys.set(null);
+      this.gs.clearPairwiseFocus();
+    } else {
+      this.pairwiseSys.set({ sysId: grp.sysId, sysName: grp.sysName });
+      const flows   = this._pairwiseFlows(sg, nodeId, grp.sysId);
+      const edgeIds = new Set(flows.map(f => f.id));
+      this.gs.setPairwiseFocus(nodeId, grp.sysId, edgeIds);
+    }
+  }
+
+  /** Close pairwise — clears both the inspector signal and canvas focus. */
+  closePairwise() {
+    this.pairwiseSys.set(null);
+    this.gs.clearPairwiseFocus();
   }
 
   /** All edges (both directions) between nodeId and the selected pairwise system. */
   pairwiseFlows(sg: SubgraphResponse, nodeId: string) {
     const pw = this.pairwiseSys();
     if (!pw) return [];
+    return this._pairwiseFlows(sg, nodeId, pw.sysId);
+  }
+
+  private _pairwiseFlows(sg: SubgraphResponse, nodeId: string, peerId: string) {
     const W: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
     return sg.edges
       .filter(e =>
-        (e.source_app === nodeId && e.sinc_app === pw.sysId) ||
-        (e.source_app === pw.sysId && e.sinc_app === nodeId),
+        (e.source_app === nodeId && e.sinc_app === peerId) ||
+        (e.source_app === peerId && e.sinc_app === nodeId),
       )
       .sort((a, b) => (W[b.criticality] ?? 0) - (W[a.criticality] ?? 0));
   }

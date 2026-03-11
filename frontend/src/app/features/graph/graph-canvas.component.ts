@@ -6,7 +6,7 @@ import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, inject } fr
 import { CommonModule } from '@angular/common';
 import * as d3          from 'd3';
 import { Subject, takeUntil } from 'rxjs';
-import { GraphService, PinnedEntity } from '../../core/services/graph.service';
+import { GraphService, PinnedEntity, PairwiseFocus } from '../../core/services/graph.service';
 import {
   SubgraphResponse, SimNode, SimEdge,
   ds, CRIT_STROKE, CRIT_WIDTH, CRIT_DASH,
@@ -53,6 +53,11 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       .subscribe(sel => {
         this._scheduleFrame();
         if (sel?.kind === 'edge' && sel.edge) this._panToEdge(sel.edge.id);
+      });
+    this.gs.pairwiseFocus$.pipe(takeUntil(this.destroy))
+      .subscribe(pw => {
+        this._scheduleFrame();
+        if (pw) this._panToPair(pw.nodeA, pw.nodeB);
       });
   }
 
@@ -293,6 +298,28 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     d3.select(canvas).call(this._zoom.transform, t);
   }
 
+  // ── Pan to two specific nodes (pairwise focus) ────────────────────────────
+
+  private _panToPair(nodeAId: string, nodeBId: string) {
+    if (!this._zoom) return;
+    const canvas = this.canvasRef.nativeElement;
+    const W = canvas.clientWidth || 900, H = canvas.clientHeight || 560;
+    const a = this._nodes.find(n => n.id === nodeAId);
+    const b = this._nodes.find(n => n.id === nodeBId);
+    if (!a || !b || a.x == null || b.x == null) return;
+
+    const pad  = 100;
+    const minX = Math.min(a.x, b.x) - NW, maxX = Math.max(a.x, b.x) + NW;
+    const minY = Math.min(a.y!, b.y!) - NH, maxY = Math.max(a.y!, b.y!) + NH;
+    const extW = maxX - minX || 1, extH = maxY - minY || 1;
+    const k    = Math.min((W - pad*2) / extW, (H - pad*2) / extH, 2.2);
+    const tx   = (W - k * (minX + maxX)) / 2;
+    const ty   = (H - k * (minY + maxY)) / 2;
+
+    const t = d3.zoomIdentity.translate(tx, ty).scale(k);
+    d3.select(canvas).transition().duration(550).call(this._zoom.transform, t);
+  }
+
   // ── Draw ──────────────────────────────────────────────────────────────────
 
   private _drawFrame() {
@@ -336,14 +363,15 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // Same for node dots: group by domain accent color → 10 fills vs 4k.
     const vpW = cW / dpr, vpH = cH / dpr;
 
-    if (t.k < 0.35 && !sel && !hasPins) {
+    const pairwiseFocus = this.gs.pairwiseFocusValue;
+    if (t.k < 0.35 && !sel && !hasPins && !pairwiseFocus) {
       this._drawEdgesBatched(ctx, vpW, vpH);
       this._drawNodesBatched(ctx, vpW, vpH, sel, neighborIds);
       return;
     }
 
-    for (const e of this._edges) this._drawEdge(ctx, e, sel, hasPins, pinColors);
-    for (const n of this._nodes) this._drawNode(ctx, n, sel, neighborIds);
+    for (const e of this._edges) this._drawEdge(ctx, e, sel, hasPins, pinColors, pairwiseFocus);
+    for (const n of this._nodes) this._drawNode(ctx, n, sel, neighborIds, pairwiseFocus);
   }
 
   // ── Batched overview draws (overview zoom, no selection) ─────────────────
@@ -418,7 +446,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       for (const n of this._nodes) {
         if (n.x == null || n.y == null) continue;
         if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue;
-        this._drawNode(ctx, n, sel, neighborIds);
+        this._drawNode(ctx, n, sel, neighborIds, this.gs.pairwiseFocusValue);
       }
     }
   }
@@ -445,6 +473,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   private _drawEdge(
     ctx: CanvasRenderingContext2D, e: SimEdge,
     sel: any, hasPins: boolean, pinColors: Map<string, string>,
+    pw: PairwiseFocus | null = null,
   ) {
     const s = e.source as SimNode, t = e.target as SimNode;
     if (s.x == null || t.x == null) return;
@@ -454,10 +483,15 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // ── LOD: at very low zoom draw a simple straight line (no Bezier / label)
     if (k < 0.35) {
       const color = CRIT_STROKE[e.criticality] ?? '#6b7280';
-      let op = sel ? (sel.kind === 'edge' ? (sel.edge?.id === e.id ? 0.9 : 0.08)
-                                           : (((e.source as SimNode).id === sel.node?.id ||
-                                               (e.target as SimNode).id === sel.node?.id) ? 0.9 : 0.08))
-                   : 0.35;
+      let op: number;
+      if (pw) {
+        op = pw.edgeIds.has(e.id) ? 0.9 : 0.04;
+      } else {
+        op = sel ? (sel.kind === 'edge' ? (sel.edge?.id === e.id ? 0.9 : 0.08)
+                                        : (((e.source as SimNode).id === sel.node?.id ||
+                                            (e.target as SimNode).id === sel.node?.id) ? 0.9 : 0.08))
+                 : 0.35;
+      }
       ctx.save();
       ctx.globalAlpha = op;
       ctx.strokeStyle = color;
@@ -470,7 +504,9 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
 
     // Opacity
     let op = 0.78;
-    if (sel) {
+    if (pw) {
+      op = pw.edgeIds.has(e.id) ? 1 : 0.04;
+    } else if (sel) {
       if (sel.kind === 'edge')
         op = sel.edge?.id === e.id ? 1 : 0.04;
       else if (sel.kind === 'node') {
@@ -536,6 +572,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   private _drawNode(
     ctx: CanvasRenderingContext2D, n: SimNode,
     sel: any, neighborIds: Set<string>,
+    pw: PairwiseFocus | null = null,
   ) {
     if (n.x == null || n.y == null) return;
 
@@ -543,14 +580,18 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const st = ds(n.domain);
     const x  = n.x!, y = n.y!;
 
+    // Pairwise opacity: 1 for the two nodes, very dim for everything else
+    const isPairNode = pw ? (n.id === pw.nodeA || n.id === pw.nodeB) : false;
+
     // ── LOD: dot at very low zoom ──────────────────────────────────────────
     if (k < 0.18) {
       const isSelected = sel?.kind === 'node' && sel.node?.id === n.id;
       ctx.save();
-      ctx.globalAlpha = sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.2) : 0.85;
+      ctx.globalAlpha = pw ? (isPairNode ? 1 : 0.06)
+                           : (sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.2) : 0.85);
       ctx.beginPath();
-      ctx.arc(x, y, isSelected ? 7 : 4, 0, Math.PI * 2);
-      ctx.fillStyle = isSelected ? st.accent : (n.active === false ? '#ef4444' : st.accent);
+      ctx.arc(x, y, (isSelected || isPairNode) ? 7 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = isPairNode ? '#60a5fa' : (isSelected ? st.accent : (n.active === false ? '#ef4444' : st.accent));
       ctx.fill();
       ctx.restore();
       return;
@@ -561,11 +602,12 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       const bw = 28, bh = 18;
       const isSelected = sel?.kind === 'node' && sel.node?.id === n.id;
       ctx.save();
-      ctx.globalAlpha = sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.15) : 0.9;
+      ctx.globalAlpha = pw ? (isPairNode ? 1 : 0.06)
+                           : (sel ? (isSelected || neighborIds.has(n.id) ? 1 : 0.15) : 0.9);
       this._rRect(ctx, x - bw/2, y - bh/2, bw, bh, 4);
       ctx.fillStyle = st.bg; ctx.fill();
-      ctx.strokeStyle = isSelected ? st.accent : st.border;
-      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.strokeStyle = (isSelected || isPairNode) ? st.accent : st.border;
+      ctx.lineWidth = (isSelected || isPairNode) ? 2 : 1;
       ctx.stroke();
       this._rRect(ctx, x - bw/2, y - bh/2, 3, bh, 2);
       ctx.fillStyle = st.accent; ctx.fill();
@@ -574,8 +616,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     // ── Full card (standard zoom) ──────────────────────────────────────────
-    let op = 1;
-    if (sel) {
+    let op: number;
+    if (pw) {
+      op = isPairNode ? 1 : 0.07;
+    } else if (sel) {
       if (sel.kind === 'node') {
         if (sel.node?.id === n.id) op = 1;
         else if (neighborIds.has(n.id)) op = 0.88;
@@ -584,24 +628,24 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         const sn = sel.edge?.sourceNode?.id ?? sel.edge?.source;
         const tn = sel.edge?.targetNode?.id ?? sel.edge?.target;
         op = (n.id === sn || n.id === tn) ? 1 : 0.18;
-      }
-    }
+      } else { op = 1; }
+    } else { op = 1; }
 
-    const isSelected  = sel?.kind === 'node' && sel.node?.id === n.id;
-    const isNeighbour = sel?.kind === 'node' && neighborIds.has(n.id);
+    const isSelected  = !pw && sel?.kind === 'node' && sel.node?.id === n.id;
+    const isNeighbour = !pw && sel?.kind === 'node' && neighborIds.has(n.id);
 
     ctx.save();
     ctx.globalAlpha = op;
 
-    // Glow
-    if (isSelected)  { ctx.shadowColor = '#60a5fa'; ctx.shadowBlur = 18; }
+    // Glow — for selected node, neighbour, or either of the pairwise nodes
+    if (isSelected || isPairNode)  { ctx.shadowColor = '#60a5fa'; ctx.shadowBlur = 18; }
     else if (isNeighbour) { ctx.shadowColor = '#60a5fa'; ctx.shadowBlur = 8; }
 
     // Background rect
     this._rRect(ctx, x - NW/2, y - NH/2, NW, NH, 10);
     ctx.fillStyle = st.bg; ctx.fill();
-    ctx.strokeStyle = (isSelected || isNeighbour) ? st.accent : st.border;
-    ctx.lineWidth   = isSelected ? 2.5 : isNeighbour ? 2 : 1.5;
+    ctx.strokeStyle = (isSelected || isNeighbour || isPairNode) ? st.accent : st.border;
+    ctx.lineWidth   = (isSelected || isPairNode) ? 2.5 : isNeighbour ? 2 : 1.5;
     ctx.stroke();
     ctx.shadowBlur  = 0;
 

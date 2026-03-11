@@ -3,6 +3,12 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams }               from '@angular/common/http';
 import { BehaviorSubject, throwError }          from 'rxjs';
 import { tap, catchError }                      from 'rxjs/operators';
+
+export interface PairwiseFocus {
+  nodeA:   string;       // currently-selected node id
+  nodeB:   string;       // peer system id
+  edgeIds: Set<string>;  // all edge ids between the two
+}
 import {
   SubgraphResponse, EntityType, SimNode, SimEdge, Selection, SearchCandidate,
 } from '../models/models';
@@ -30,13 +36,16 @@ export class GraphService {
   private _sg  = new BehaviorSubject<SubgraphResponse|null>(null);
   private _l   = new BehaviorSubject<boolean>(false);
   private _sel = new BehaviorSubject<Selection|null>(null);
+  private _pw  = new BehaviorSubject<PairwiseFocus|null>(null);
 
-  readonly subgraph$ = this._sg.asObservable();
-  readonly loading$  = this._l.asObservable();
-  readonly selected$ = this._sel.asObservable();
+  readonly subgraph$      = this._sg.asObservable();
+  readonly loading$       = this._l.asObservable();
+  readonly selected$      = this._sel.asObservable();
+  readonly pairwiseFocus$ = this._pw.asObservable();
 
-  get selectionValue()      { return this._sel.value; }
-  get currentSubgraphValue(){ return this._sg.value;  }
+  get selectionValue()       { return this._sel.value; }
+  get currentSubgraphValue() { return this._sg.value;  }
+  get pairwiseFocusValue()   { return this._pw.value;  }
 
   readonly mode = signal<AppMode>('graph');
   setMode(m: AppMode) { this.mode.set(m); }
@@ -131,7 +140,7 @@ export class GraphService {
     this._l.next(true);
     const p = new HttpParams().set('entity_id', entityId).set('entity_type', entityType);
     return this.http.get<SubgraphResponse>('/api/graph', { params: p }).pipe(
-      tap(sg => { this._sg.next(sg); this._l.next(false); this._sel.next(null); }),
+      tap(sg => { this._sg.next(sg); this._l.next(false); this._sel.next(null); this._pw.next(null); }),
       catchError(e => { this._l.next(false); return throwError(() => e); }),
     );
   }
@@ -139,14 +148,20 @@ export class GraphService {
   loadFull() {
     this._l.next(true);
     return this.http.get<SubgraphResponse>('/api/graph/full').pipe(
-      tap(sg => { this._sg.next(sg); this._l.next(false); this._sel.next(null); }),
+      tap(sg => { this._sg.next(sg); this._l.next(false); this._sel.next(null); this._pw.next(null); }),
       catchError(e => { this._l.next(false); return throwError(() => e); }),
     );
   }
 
   selectNode(node: SimNode) { this._sel.next({ kind:'node', node }); }
   selectEdge(edge: SimEdge) { this._sel.next({ kind:'edge', edge }); }
-  clearSelection()          { this._sel.next(null); this.inspectorSgCache.set(null); }
+  clearSelection()          { this._sel.next(null); this.inspectorSgCache.set(null); this.clearPairwiseFocus(); }
+
+  /** Activate pairwise canvas focus — dims everything except the two nodes and their edges. */
+  setPairwiseFocus(nodeA: string, nodeB: string, edgeIds: Set<string>) {
+    this._pw.next({ nodeA, nodeB, edgeIds });
+  }
+  clearPairwiseFocus() { this._pw.next(null); }
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
