@@ -87,6 +87,32 @@
       <!-- Flows: always the node's own 1-hop neighbourhood, not the canvas view -->
       <ng-container *ngIf="inspectorSg$ | async as sg">
 
+        <!-- ── PAIRWISE VIEW — all connections between this node and a chosen peer ── -->
+        <ng-container *ngIf="pairwiseSys() as pw">
+          <ng-container *ngIf="pairwiseFlows(sg, node.id) as pwFlows">
+            <div class="pw-bar">
+              <div class="pw-hdr">
+                <span class="pw-icon">↔</span>
+                <span class="pw-name">{{pw.sysName}}</span>
+                <span class="pw-ct">{{pwFlows.length}}</span>
+                <button class="pw-close" (click)="pairwiseSys.set(null)" title="Close pairwise view">×</button>
+              </div>
+              <div class="pw-list">
+                <div *ngFor="let f of pwFlows; trackBy: trackPairFlow"
+                     class="fg-flow"
+                     (click)="selectFlow(f, sg); $event.stopPropagation()"
+                     title="Click to highlight this flow in the graph">
+                  <span class="pw-dir" [style.color]="cs(f.criticality)">{{flowDir(f, node.id)}}</span>
+                  <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
+                  <span class="fg-name">{{f.information_entity}}</span>
+                </div>
+                <div class="empty-flows" *ngIf="pwFlows.length === 0">no flows found</div>
+              </div>
+            </div>
+            <div class="div"></div>
+          </ng-container>
+        </ng-container>
+
         <!-- ── UPSTREAM ─────────────────────────────────────────────── -->
         <ng-container *ngIf="inboundGrouped(sg, node.id) as inGroups">
           <div class="sl">
@@ -97,11 +123,14 @@
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no upstream'}}
           </div>
           <div *ngFor="let grp of inGroups; trackBy: trackGroup" class="fg">
-            <div class="fg-row">
+            <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
+                 (click)="selectPairwiseSys(grp); $event.stopPropagation()"
+                 title="Click to see all connections between these two systems">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
               <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
+              <span class="fg-pw-hint" *ngIf="pairwiseSys()?.sysId !== grp.sysId">↔</span>
             </div>
             <div class="fg-flows">
               <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"
@@ -129,11 +158,14 @@
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no downstream'}}
           </div>
           <div *ngFor="let grp of outGroups; trackBy: trackGroup" class="fg">
-            <div class="fg-row">
+            <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
+                 (click)="selectPairwiseSys(grp); $event.stopPropagation()"
+                 title="Click to see all connections between these two systems">
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
               <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
+              <span class="fg-pw-hint" *ngIf="pairwiseSys()?.sysId !== grp.sysId">↔</span>
             </div>
             <div class="fg-flows">
               <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"

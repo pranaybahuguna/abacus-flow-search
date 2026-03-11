@@ -105,7 +105,7 @@ def _sys(n: dict) -> SystemOut:
         active=n.get("active", True),
         confidentiality=n.get("confidentiality"),
         data_storage_territory=n.get("data_storage_territory"),
-        pd_sensitivity_declared=n.get("pd_sensitivity_declared", False),
+        pd_sensitivity_declared=n.get("pd_sensitivity_declared", ""),
         layout_x=n.get("layout_x"),
         layout_y=n.get("layout_y"),
     )

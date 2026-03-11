@@ -25,6 +25,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   flowMatchIds  = signal<Map<string, number> | null>(null);
   searching     = signal(false);
   currentNodeId = signal<string>('');
+  /** System selected for pairwise (bidirectional) flow view. */
+  pairwiseSys   = signal<{ sysId: string; sysName: string } | null>(null);
 
   /**
    * Inspector-specific subgraph: always the selected node's full 1-hop
@@ -73,6 +75,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
           this.flowSearch.set('');
           this.flowMatchIds.set(null);
           this.searching.set(false);
+          this.pairwiseSys.set(null);
         }
         lastId = id;
       }
@@ -267,4 +270,31 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   trackGroup(_: number, grp: { sysId: string }): string { return grp.sysId; }
   trackFlow(_: number, f: Flow): string { return f.id; }
+  trackPairFlow(_: number, f: Flow): string { return f.id; }
+
+  // ── Pairwise (bidirectional) flow helpers ─────────────────────────────────
+
+  /** Toggle pairwise view for a system group. Click same system again to dismiss. */
+  selectPairwiseSys(grp: { sysId: string; sysName: string }) {
+    const cur = this.pairwiseSys();
+    this.pairwiseSys.set(cur?.sysId === grp.sysId ? null : { sysId: grp.sysId, sysName: grp.sysName });
+  }
+
+  /** All edges (both directions) between nodeId and the selected pairwise system. */
+  pairwiseFlows(sg: SubgraphResponse, nodeId: string) {
+    const pw = this.pairwiseSys();
+    if (!pw) return [];
+    const W: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+    return sg.edges
+      .filter(e =>
+        (e.source_app === nodeId && e.sinc_app === pw.sysId) ||
+        (e.source_app === pw.sysId && e.sinc_app === nodeId),
+      )
+      .sort((a, b) => (W[b.criticality] ?? 0) - (W[a.criticality] ?? 0));
+  }
+
+  /** Direction arrow relative to nodeId: → = outbound, ← = inbound. */
+  flowDir(f: Flow, nodeId: string): string {
+    return f.source_app === nodeId ? '→' : '←';
+  }
 }

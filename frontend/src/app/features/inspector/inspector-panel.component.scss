@@ -99,7 +99,11 @@
 
 /* ── Flow group cards (grouped by system) ───────────────────────────────── */
 .fg{margin-bottom:5px;border-radius:5px;background:#0c1626;border:1px solid #264e72;overflow:hidden}
-.fg-row{display:flex;align-items:center;gap:6px;padding:5px 7px}
+.fg-row{display:flex;align-items:center;gap:6px;padding:5px 7px;cursor:pointer;transition:background .12s}
+.fg-row:hover{background:#101e38}
+.fg-row.fg-row-active{background:#0d2040;border-bottom:1px solid #3b6ea8}
+.fg-pw-hint{font-size:8px;color:#3b6ea8;flex-shrink:0;opacity:.7;transition:opacity .12s}
+.fg-row:hover .fg-pw-hint{opacity:1;color:#60a5fa}
 .fg-count{font-size:7px;padding:2px 7px;border-radius:10px;background:#1a3050;border:1px solid #3a7ab0;color:#80b8fa;flex-shrink:0;white-space:nowrap}
 .fg-flows{padding:3px 8px 6px 14px;display:flex;flex-direction:column;gap:3px;border-top:1px solid #1a3050}
 .fg-flow{font-size:8px;color:#c4d8ee;display:flex;align-items:center;gap:5px;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s;min-width:0}
@@ -108,6 +112,17 @@
 .fg-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fg-score{flex-shrink:0;font-size:8.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);margin-left:auto;white-space:nowrap}
 .empty-flows{font-size:8.5px;color:#80b8fa;padding:3px 0 6px;opacity:.75}
+
+/* ── Pairwise (bidirectional) panel ─────────────────────────────────────── */
+.pw-bar{margin-bottom:8px;border-radius:6px;background:#07182e;border:1px solid #2a5a8a;overflow:hidden}
+.pw-hdr{display:flex;align-items:center;gap:5px;padding:6px 9px;background:#0a1e38;border-bottom:1px solid #1a4070}
+.pw-icon{font-size:11px;color:#60a5fa;flex-shrink:0;font-weight:700}
+.pw-name{flex:1;font-size:8px;color:#aad4ff;font-weight:600;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pw-ct{font-size:7px;padding:2px 6px;border-radius:8px;background:#1a3050;border:1px solid #3a7ab0;color:#60a5fa;flex-shrink:0}
+.pw-close{background:none;border:none;color:#6090b8;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0;margin-left:2px;transition:color .12s}
+.pw-close:hover{color:#e2ecf8}
+.pw-list{padding:5px 9px 7px;display:flex;flex-direction:column;gap:3px}
+.pw-dir{font-size:9px;font-weight:700;flex-shrink:0;width:12px;text-align:center}
 
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
 .sys{padding:8px 10px;border-radius:7px;border:1px solid;margin-bottom:4px}
