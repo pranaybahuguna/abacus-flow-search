@@ -20,6 +20,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   selected$ = this.gs.selected$;
 
   collapsed     = signal(false);
+  expanded      = signal(false);                    // wide mode (480px vs 276px)
   flowSearch    = signal('');                       // text in the input
   /** flow_id → similarity score (0–1). null = no active search / show all. */
   flowMatchIds  = signal<Map<string, number> | null>(null);
@@ -59,7 +60,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   @HostBinding('class.collapsed')
   get isCollapsed() { return this.collapsed(); }
 
-  toggle() { this.collapsed.update(v => !v); }
+  @HostBinding('class.expanded')
+  get isExpanded() { return this.expanded(); }
+
+  toggle()       { this.collapsed.update(v => !v); }
+  toggleExpand() { this.expanded.update(v => !v); }
 
   ngOnInit() {
     // Track current node ID; reset search state on new node selection

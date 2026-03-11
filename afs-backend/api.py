@@ -442,24 +442,39 @@ def inspector_flow_search(
       - Flow descriptions       ("FX confirmation", "derivatives lifecycle")
       - Protocol / criticality  ("SWIFT", "Critical")
     """
-    # 1. Get all flow IDs that belong to this node
-    node_sg      = _graph.subgraph_for_system(node_id)
-    node_flow_ids = {e["id"] for e in node_sg.get("edges", []) if e.get("id")}
-    if not node_flow_ids:
+    # 1. Get all flows that belong to this node (id → edge dict)
+    node_sg    = _graph.subgraph_for_system(node_id)
+    node_edges = {e["id"]: e for e in node_sg.get("edges", []) if e.get("id")}
+    if not node_edges:
         return {"results": []}
 
-    # 2. Semantic similarity search across ALL flows in the vector store
-    r = _vsearch.search(q, entity_type="flow", top_k=top_k)
+    q_lower = q.strip().lower()
 
-    # 3. Keep only flows that belong to this node, preserve ranking order
-    # Clamp scores to [0, 1] — ChromaDB L2→relevance can produce negative values
-    # for dissimilar embeddings; negative % labels are confusing in the UI.
-    results = [
+    # 2. Lexical / substring match — catches literal names even when semantic
+    #    similarity is low (e.g. "FX SWIFT Confirmation Receipt" typed verbatim).
+    #    Score 1.0 for a hit in information_entity, 0.95 for business_process only.
+    lexical: list[dict] = []
+    for eid, e in node_edges.items():
+        ie = (e.get("information_entity") or "").lower()
+        bp = " ".join(e.get("business_process") or []).lower()
+        if q_lower in ie:
+            lexical.append({"flow_id": eid, "score": 1.0})
+        elif q_lower in bp:
+            lexical.append({"flow_id": eid, "score": 0.95})
+
+    # 3. Semantic similarity search across ALL flows in ChromaDB
+    r = _vsearch.search(q, entity_type="flow", top_k=top_k)
+    semantic = [
         {"flow_id": c.entity_id, "score": max(0.0, round(c.score, 3))}
         for c in r.candidates          # already sorted best-first by ChromaDB
-        if c.entity_id in node_flow_ids
+        if c.entity_id in node_edges
     ]
-    return {"results": results}
+
+    # 4. Merge: lexical hits first (deduped), then semantic remainder
+    seen     = {x["flow_id"] for x in lexical}
+    combined = lexical + [x for x in semantic if x["flow_id"] not in seen]
+    combined.sort(key=lambda x: -x["score"])
+    return {"results": combined[:top_k]}
 
 
 @app.get("/api/dependencies")

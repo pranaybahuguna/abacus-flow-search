@@ -27,6 +27,9 @@
         </div>
       }
     </div>
+    <button class="expand" (click)="toggleExpand()" [title]="expanded() ? 'Collapse panel' : 'Expand panel'">
+      {{ expanded() ? '⊟' : '⊞' }}
+    </button>
     <button class="close" (click)="gs.clearSelection()">×</button>
   </div>
 
