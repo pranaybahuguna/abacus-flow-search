@@ -328,8 +328,99 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       });
     }
 
+    // ── Batched overview rendering (no selection, low zoom) ───────────────
+    // At k<0.35 each edge would otherwise call ctx.stroke() individually.
+    // 44k strokes/frame × 60fps = 2.6M GPU flushes/sec → drops to ~10fps.
+    // Batching groups edges by color into one beginPath → one stroke per
+    // criticality bucket (4 strokes total instead of 44k).
+    // Same for node dots: group by domain accent color → 10 fills vs 4k.
+    const vpW = cW / dpr, vpH = cH / dpr;
+
+    if (t.k < 0.35 && !sel && !hasPins) {
+      this._drawEdgesBatched(ctx, vpW, vpH);
+      this._drawNodesBatched(ctx, vpW, vpH, sel, neighborIds);
+      return;
+    }
+
     for (const e of this._edges) this._drawEdge(ctx, e, sel, hasPins, pinColors);
     for (const n of this._nodes) this._drawNode(ctx, n, sel, neighborIds);
+  }
+
+  // ── Batched overview draws (overview zoom, no selection) ─────────────────
+  // Called instead of the per-element loops when k < 0.35 and nothing is
+  // selected. Reduces GPU flush calls from O(n_edges) → O(4 criticalities)
+  // and O(n_nodes) → O(n_domains). Also culls elements outside the viewport.
+
+  private _viewportBounds(vpW: number, vpH: number, pad: number) {
+    const t = this._transform;
+    return {
+      x0: -t.x / t.k - pad, y0: -t.y / t.k - pad,
+      x1: (vpW - t.x) / t.k + pad, y1: (vpH - t.y) / t.k + pad,
+    };
+  }
+
+  private _drawEdgesBatched(ctx: CanvasRenderingContext2D, vpW: number, vpH: number) {
+    const { x0, y0, x1, y1 } = this._viewportBounds(vpW, vpH, 300);
+
+    // Group visible edges by stroke colour (one beginPath per colour)
+    const batches = new Map<string, Array<[number, number, number, number]>>();
+    for (const e of this._edges) {
+      const s = e.source as SimNode, t = e.target as SimNode;
+      if (s.x == null || t.x == null) continue;
+      // Cull: skip if both endpoints are on the same off-screen side
+      if ((s.x < x0 && t.x < x0) || (s.x > x1 && t.x > x1) ||
+          (s.y! < y0 && t.y! < y0) || (s.y! > y1 && t.y! > y1)) continue;
+      const color = CRIT_STROKE[e.criticality] ?? '#6b7280';
+      if (!batches.has(color)) batches.set(color, []);
+      batches.get(color)!.push([s.x!, s.y!, t.x!, t.y!]);
+    }
+
+    for (const [color, lines] of batches) {
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = 0.6;
+      ctx.beginPath();
+      for (const [ax, ay, bx, by] of lines) { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  private _drawNodesBatched(
+    ctx: CanvasRenderingContext2D, vpW: number, vpH: number,
+    sel: any, neighborIds: Set<string>,
+  ) {
+    const k = this._transform.k;
+    if (k < 0.18) {
+      // Dot mode: group by domain accent colour; cull off-screen nodes
+      const { x0, y0, x1, y1 } = this._viewportBounds(vpW, vpH, 20);
+      const batches = new Map<string, Array<[number, number]>>();
+      for (const n of this._nodes) {
+        if (n.x == null || n.y == null) continue;
+        if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue;
+        const color = ds(n.domain).accent;
+        if (!batches.has(color)) batches.set(color, []);
+        batches.get(color)!.push([n.x, n.y]);
+      }
+      ctx.globalAlpha = 0.75;
+      for (const [color, pts] of batches) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        // moveTo(x+r, y) before arc prevents the browser drawing a connecting
+        // line between consecutive arcs inside the same beginPath.
+        for (const [nx, ny] of pts) { ctx.moveTo(nx + 3, ny); ctx.arc(nx, ny, 3, 0, Math.PI * 2); }
+        ctx.fill();
+      }
+    } else {
+      // Small-box mode (0.18 ≤ k < 0.35): still per-node but viewport-culled
+      const { x0, y0, x1, y1 } = this._viewportBounds(vpW, vpH, 40);
+      for (const n of this._nodes) {
+        if (n.x == null || n.y == null) continue;
+        if (n.x < x0 || n.x > x1 || n.y < y0 || n.y > y1) continue;
+        this._drawNode(ctx, n, sel, neighborIds);
+      }
+    }
   }
 
   // ── Grid ──────────────────────────────────────────────────────────────────
