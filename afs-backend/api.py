@@ -33,7 +33,7 @@ from fastapi.responses        import FileResponse
 from pydantic                 import BaseModel
 
 from graph_store   import GraphStore
-from vector_search import VectorSearch     # self-contained — no model arg needed
+from vector_search import VectorSearch, HIGH_THRESHOLD, MEDIUM_THRESHOLD
 from impact        import analyse, to_dict
 
 # ── Startup — loaded once, reused forever ─────────────────────────────────────
@@ -200,26 +200,71 @@ def search(
     STEP 1 — LangChain vector search via Chroma + OpenAI embeddings.
     Returns candidates with confidence tier (HIGH/MEDIUM/LOW).
     Angular auto-triggers /api/graph if tier == HIGH.
+
+    WHY per-type search (not a flat mixed search):
+    With 44k flows vs ~100 systems, a flat top_k=20 query fills all slots
+    with flows — the system the user typed by name never appears.
+    Searching each enabled type separately guarantees proportional slots
+    and matches how the DEPENDENCIES page finds systems reliably.
     """
-    r = _vsearch.search(q, entity_type=entity_type, top_k=top_k)
+    # ── Explicit entity_type: single-type search, no filtering needed ──────────
+    if entity_type is not None:
+        r = _vsearch.search(q, entity_type=entity_type, top_k=top_k)
+        return SearchOut(
+            tier=r.tier, message=r.message,
+            resolved=_candidate_out(r.resolved) if r.resolved else None,
+            candidates=[_candidate_out(c) for c in r.candidates],
+        )
 
-    # Type filter — only applied when no explicit entity_type is requested,
-    # so callers that pin a specific type are never affected.
-    candidates_raw = r.candidates
-    if entity_type is None:
-        allowed: set[str] = set()
-        if include_systems: allowed.add("system")
-        if include_bps:     allowed.add("business_process")
-        if include_flows:   allowed.add("flow")
-        candidates_raw = [c for c in candidates_raw if c.entity_type in allowed]
+    # ── Multi-type search: one Chroma query per enabled type ───────────────────
+    enabled: list[str] = []
+    if include_systems: enabled.append("system")
+    if include_bps:     enabled.append("business_process")
+    if include_flows:   enabled.append("flow")
 
-    search_out = SearchOut(
-        tier=r.tier,
-        message=r.message,
-        resolved=_candidate_out(r.resolved) if r.resolved else None,
-        candidates=[_candidate_out(c) for c in candidates_raw]
+    if not enabled:
+        return SearchOut(tier="LOW", message="No entity types selected.", candidates=[])
+
+    # Each type gets an equal quota; minimum 5 per type so small corpora
+    # (e.g. only 15 systems) are fully represented.
+    per_k = max(5, (top_k + len(enabled) - 1) // len(enabled))
+
+    combined = []
+    for etype in enabled:
+        sub = _vsearch.search(q, entity_type=etype, top_k=per_k)
+        combined.extend(sub.candidates)
+
+    combined.sort(key=lambda c: -c.score)
+    combined = combined[:top_k]
+
+    if not combined:
+        return SearchOut(
+            tier="LOW",
+            message=f"No entities matched '{q}'.",
+            candidates=[],
+        )
+
+    best = combined[0]
+    if best.score >= HIGH_THRESHOLD:
+        tier     = "HIGH"
+        resolved = best
+        message  = f"Resolved to '{best.name}' (confidence {best.score:.0%})"
+    elif best.score >= MEDIUM_THRESHOLD:
+        tier     = "MEDIUM"
+        resolved = None
+        close    = [c for c in combined if c.score >= MEDIUM_THRESHOLD]
+        names    = ", ".join(f"'{c.name}'" for c in close[:3])
+        message  = f"Multiple matches: {names}. Which did you mean?"
+    else:
+        tier     = "LOW"
+        resolved = None
+        message  = f"Low confidence ({best.score:.0%}) for '{q}'. Try a more specific term."
+
+    return SearchOut(
+        tier=tier, message=message,
+        resolved=_candidate_out(resolved) if resolved else None,
+        candidates=[_candidate_out(c) for c in combined],
     )
-    return search_out
 
 
 @app.get("/api/graph", response_model=SubgraphOut)
