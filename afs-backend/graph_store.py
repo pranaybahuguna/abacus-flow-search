@@ -39,7 +39,7 @@ GRAPH_PATH = Path("data/graph.pkl")
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _compute_layout(G: nx.MultiDiGraph,
-                    W: float = 10_000, H: float = 7_000) -> dict[str, tuple[float, float]]:
+                    target_spacing: float = 180) -> dict[str, tuple[float, float]]:
     """
     Domain-based phyllotaxis layout — runs once during build_graph().
 
@@ -51,12 +51,22 @@ def _compute_layout(G: nx.MultiDiGraph,
        spiral, which distributes points uniformly inside a disc with no
        empty rings or overcrowded centres.
 
-    Result: every node gets a deterministic (x, y) that clusters systems
-    by business domain while spacing clusters far enough apart to avoid
-    edge crossings at the inter-domain level.  The frontend can render
-    4-5 k nodes at a glance (dots at low zoom → full cards when zoomed in)
-    without ever running a force simulation.
+    Canvas dimensions scale with sqrt(n) so that the frontend's
+    fit-to-viewport zoom always lands at a consistent visual density:
+      n≈  15 → k≈0.64 (full cards on load)
+      n≈ 100 → k≈0.43 (small boxes; zoom in for cards)
+      n≈ 500 → k≈0.19 (overview boxes)
+      n≈5000 → k≈0.06 (dot overview)
     """
+    n_total = G.number_of_nodes()
+    if n_total == 0:
+        return {}
+
+    # Scale canvas with sqrt(n) — keeps node density constant regardless of size
+    aspect = 16 / 9
+    W = max(1_400, int(math.sqrt(n_total * aspect) * target_spacing))
+    H = max(  900, int(math.sqrt(n_total / aspect) * target_spacing))
+
     GOLDEN = 2.39996323          # golden angle ≈ 137.508° in radians
 
     domain_nodes: dict[str, list[str]] = defaultdict(list)
