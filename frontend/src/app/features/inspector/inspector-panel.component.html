@@ -45,7 +45,7 @@
       <div class="row"><span class="rl">Confidentiality</span><span class="rv">{{node.confidentiality}}</span></div>
       <div class="row"><span class="rl">Data Territory</span> <span class="rv">{{node.data_storage_territory}}</span></div>
       <div class="row"><span class="rl">CIAT</span>           <span class="rv">{{node.ciat_computed}}</span></div>
-      <div class="row"><span class="rl">PD Sensitivity</span> <span class="rv">{{node.pd_sensitivity_declared ? 'Yes' : 'No'}}</span></div>
+      <div class="row"><span class="rl">PD Sensitivity</span> <span class="rv">{{node.pd_sensitivity_declared ?? '—'}}</span></div>
 
       <div class="div"></div>
       <div class="sl">DESCRIPTION</div>

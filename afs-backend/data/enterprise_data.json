@@ -24,7 +24,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 Paris",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "Murex is the primary front-office trading system responsible for trade capture, real-time risk management, pricing of derivatives, FX spot and forward trades, fixed income instruments and equities. It is the source of truth for all trading book positions. Murex drives the FX trade lifecycle, derivatives lifecycle, and feeds risk calculations."
     },
     {
@@ -51,7 +51,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 Frankfurt",
-      "pd_sensitivity_declared": true,
+      "pd_sensitivity_declared": "Yes",
       "embed_text": "Temenos T24 is the core banking system managing all retail and corporate customer accounts, savings and current deposits, loan origination and servicing, and the enterprise general ledger. It is the system of record for customer balances and banking products. It participates in customer onboarding, loan drawdowns, corporate actions entitlements, and payment origination."
     },
     {
@@ -80,7 +80,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "Global",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "SWIFT Gateway is the bank's connectivity layer to the SWIFT network. It processes all interbank payment messages including MT103 customer credit transfers, MT202 bank-to-bank transfers, MT700 and MT710 documentary credit messages for trade finance, and FX confirmation messages. It handles message formatting, validation, and routing. It is a critical node in FX trade lifecycle, cross-border payments, trade finance documentary credit, and securities CSD settlement."
     },
     {
@@ -109,7 +109,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Amsterdam",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "Payments Hub is the central orchestration layer for all payment flows. It receives payment instructions from core banking, trading, treasury, post-trade, loan, and trade finance systems, enriches them, applies routing rules, and dispatches them across the appropriate payment rail. It serves multiple business processes: retail payments, FX cash settlement, derivatives coupon and reset payments, corporate action distributions, treasury settlement, loan repayments, and trade finance payments."
     },
     {
@@ -136,7 +136,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Luxembourg",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "Kondor+ is the treasury management system used by the treasury desk for money market instruments, FX transactions, and repo agreements. It tracks nostro account balances, manages intraday cash and liquidity positions, and feeds payment instructions to the payments infrastructure. It receives FX deal notifications from Murex and real-time payment outflow data from Payments Hub for intraday liquidity management."
     },
     {
@@ -165,7 +165,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 Dublin",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "Calypso handles all post-trade operations including trade confirmation matching with counterparties, generation of settlement instructions for equities and fixed income, securities lifecycle event processing such as corporate actions and coupon payments, FX confirmation and settlement, derivatives lifecycle events including option exercises and swap resets, and coordination with custodians and CSDs. It is a hub in the FX trade lifecycle, derivatives lifecycle, corporate actions, and CSD settlement processes."
     },
     {
@@ -192,7 +192,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 London",
-      "pd_sensitivity_declared": true,
+      "pd_sensitivity_declared": "Yes",
       "embed_text": "Actimize is the financial crime and compliance platform. It performs real-time AML transaction monitoring on all payment flows, screens counterparties and beneficiaries against sanctions lists, detects fraud patterns, and generates suspicious activity reports. It intercepts flows from Payments Hub, trade finance, and KYC onboarding platforms before execution. It screens new customers during onboarding, trade finance parties for documentary credits, and ongoing payment flows."
     },
     {
@@ -219,7 +219,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Frankfurt",
-      "pd_sensitivity_declared": true,
+      "pd_sensitivity_declared": "Yes",
       "embed_text": "The Enterprise DataWarehouse consolidates data from all operational systems including trading, payments, core banking, risk, loan, and compliance platforms. It powers regulatory reports such as COREP, FINREP, EMIR, MiFID II, and transaction reporting to the FCA and ECB. It also provides management information and analytics dashboards for risk, payments, loans, and financial crime."
     },
     {
@@ -246,7 +246,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Paris",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "Finastra Fusion manages the full lifecycle of trade finance instruments including issuance and processing of letters of credit, bank guarantees, documentary collections, and supply chain finance facilities. It sends MT700 and MT710 SWIFT documentary credit messages via the SWIFT Gateway, screens parties through Actimize, triggers payments via Payments Hub, interfaces with core banking for limit checking, and reports to the DataWarehouse. It is the system of record for the trade finance documentary credit business process."
     },
     {
@@ -275,7 +275,7 @@
       "active": true,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 London",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "The RiskEngine is the central calculation engine for market risk, counterparty credit risk, liquidity risk, and regulatory capital. It consumes trade positions from Murex and Calypso, market data from the Market Data Platform, loan exposures from LoanIQ, and nostro positions from Kondor+. It runs Monte Carlo and historical VaR calculations, computes Potential Future Exposure for derivatives, monitors intraday liquidity risk, and produces Basel III capital adequacy metrics. It also sends VaR limit breach alerts back to Murex."
     },
     {
@@ -302,7 +302,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Madrid",
-      "pd_sensitivity_declared": true,
+      "pd_sensitivity_declared": "Yes",
       "embed_text": "LoanIQ is the corporate and syndicated lending platform managing the full lifecycle of corporate loans and credit facilities. It receives approved customer profiles from the KYC and onboarding platform, processes loan drawdowns and forwards instructions to Temenos T24 core banking, tracks repayment schedules, sends loan repayment payment instructions to Payments Hub, reports credit risk exposures to RiskEngine, and feeds loan portfolio data to the DataWarehouse for FINREP and Basel reporting."
     },
     {
@@ -329,7 +329,7 @@
       "active": false,
       "confidentiality": "serious",
       "data_storage_territory": "EU \u2013 Amsterdam",
-      "pd_sensitivity_declared": true,
+      "pd_sensitivity_declared": "Yes",
       "embed_text": "The KYC and Onboarding Platform manages end-to-end customer and counterparty due diligence including identity verification, beneficial ownership, source of funds, and PEP screening. It sends customers to Actimize for AML screening before approval, creates approved customer records in Temenos T24 core banking, hands off approved corporate borrower profiles to LoanIQ for loan origination, and feeds onboarding data to the DataWarehouse for CDD regulatory reporting."
     },
     {
@@ -357,7 +357,7 @@
       "active": true,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Brussels",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "The CREST/Euroclear Gateway is the bank's connectivity layer to Central Securities Depositories for securities settlement. It receives settlement instructions from Calypso for delivery-versus-payment of equities and fixed income, confirms settled transactions back to Calypso, and routes cross-border settlement messages through the SWIFT Gateway for international Euroclear transactions. It is core to the Securities CSD Settlement business process."
     },
     {
@@ -386,7 +386,7 @@
       "active": true,
       "confidentiality": "low",
       "data_storage_territory": "Global",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "The Market Data Platform aggregates and distributes real-time and historical market data from Bloomberg and Refinitiv feeds. It supplies FX spot and forward rates to Murex and Kondor+ for pricing and nostro valuation, provides interest rate and credit curves to the RiskEngine for scenario analysis and VaR, distributes corporate action announcements to Calypso for lifecycle processing, and supplies reference data across all front-office and risk systems."
     },
     {
@@ -414,7 +414,7 @@
       "active": false,
       "confidentiality": "moderate",
       "data_storage_territory": "EU \u2013 Paris",
-      "pd_sensitivity_declared": false,
+      "pd_sensitivity_declared": "No",
       "embed_text": "The GL Accounting Engine generates automated general ledger entries for all capital markets activity. It receives P&L and accounting instructions from Murex for trading book movements, from Calypso for securities settlements and derivatives lifecycle events including option exercises and swap coupon payments, and for corporate action entitlement accounting. It applies IFRS 9 accounting rules for financial instruments and feeds the DataWarehouse for financial reporting."
     }
   ],

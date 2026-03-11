@@ -21,6 +21,9 @@
   <div class="bar-top" *ngIf="subgraph$ | async as sg">
     <div class="pill">{{sg.nodes.length}} nodes · {{sg.edges.length}} edges</div>
     <div class="pill reg" *ngIf="sg.regulatory">⚖ {{sg.regulatory}}</div>
+    <div class="pill trunc-warn" *ngIf="sg.truncated" title="Refine your search to see remaining nodes">
+      ⚠ Showing {{sg.nodes.length}} of {{sg.total_nodes}} nodes
+    </div>
     <div class="pill pin-mode-pill" *ngIf="gs.hasPins()">◈ MULTI-PROCESS VIEW</div>
     <button class="pill esc" *ngIf="selected$ | async" (click)="gs.clearSelection()">ESC · clear</button>
   </div>

@@ -66,7 +66,7 @@ class SystemOut(BaseModel):
     legal_entity:Optional[str]=None; major_business_process:list[str]=[]
     ciat_computed:Optional[str]=None; active:bool=True
     confidentiality:Optional[str]=None; data_storage_territory:Optional[str]=None
-    pd_sensitivity_declared:bool=False
+    pd_sensitivity_declared:Optional[str]=None
 
 class FlowOut(BaseModel):
     id:str; source_app:str; sinc_app:str; information_entity:str
@@ -79,6 +79,11 @@ class FlowOut(BaseModel):
 class SubgraphOut(BaseModel):
     label:str; regulatory:Optional[str]=None
     nodes:list[SystemOut]; edges:list[FlowOut]
+    truncated:bool=False; total_nodes:Optional[int]=None
+
+# Maximum nodes the D3 canvas will receive in one subgraph response.
+# Above this the graph becomes unrenderable; the UI shows a warning instead.
+MAX_GRAPH_NODES = 80
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -116,10 +121,27 @@ def _flow(e: dict) -> FlowOut:
     )
 
 def _subgraph_out(sg: dict) -> SubgraphOut:
-    subgraph_out = SubgraphOut(label=sg["label"], regulatory=sg.get("regulatory"),
-                       nodes=[_sys(n) for n in sg["nodes"]],
-                       edges=[_flow(e) for e in sg["edges"]])
-    return subgraph_out
+    all_nodes = sg["nodes"]
+    total     = len(all_nodes)
+    truncated = total > MAX_GRAPH_NODES
+    if truncated:
+        # Keep the first MAX_GRAPH_NODES nodes and only edges whose both
+        # endpoints are in that set, so the graph stays self-consistent.
+        kept_ids  = {n.get("main_id", n.get("id","")) for n in all_nodes[:MAX_GRAPH_NODES]}
+        all_nodes = all_nodes[:MAX_GRAPH_NODES]
+        sg_edges  = [e for e in sg["edges"]
+                     if e.get("source_app","") in kept_ids
+                     and e.get("sinc_app","")   in kept_ids]
+    else:
+        sg_edges = sg["edges"]
+    return SubgraphOut(
+        label       = sg["label"],
+        regulatory  = sg.get("regulatory"),
+        nodes       = [_sys(n) for n in all_nodes],
+        edges       = [_flow(e) for e in sg_edges],
+        truncated   = truncated,
+        total_nodes = total,
+    )
 
 def _candidate_out(c) -> CandidateOut:
     candidate_out = CandidateOut(entity_id=c.entity_id, entity_type=c.entity_type,

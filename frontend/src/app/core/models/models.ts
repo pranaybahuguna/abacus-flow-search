@@ -18,7 +18,7 @@ export interface System {
   active?: boolean;
   confidentiality?: string;
   data_storage_territory?: string;
-  pd_sensitivity_declared?: boolean;
+  pd_sensitivity_declared?: string;
 }
 
 export interface Flow {
@@ -48,6 +48,7 @@ export interface SearchResponse {
 export interface SubgraphResponse {
   label: string; regulatory?: string;
   nodes: System[]; edges: Flow[];
+  truncated?: boolean; total_nodes?: number;
 }
 
 // D3 augments nodes with position data at runtime

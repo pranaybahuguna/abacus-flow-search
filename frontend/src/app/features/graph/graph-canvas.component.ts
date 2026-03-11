@@ -139,13 +139,27 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     svg.call(this._zoom);
     svg.on('click', () => this.gs.clearSelection());
 
-    // Simulation — longer links + stronger repulsion = well-spread layout
+    // Adaptive simulation — scale parameters and tick budget by node count.
+    // Small graphs  (<20)  : slow decay for a nice organic layout.
+    // Medium graphs (<80)  : moderate decay, stops after 300 ticks.
+    // Large graphs  (80+)  : fast decay + hard stop after 120 ticks to
+    //                        prevent the browser freezing on dense subgraphs.
+    const n = nodes.length;
+    const alphaDecay = n < 20 ? 0.013 : n < 50 ? 0.028 : 0.055;
+    const maxTicks   = n < 20 ? 0     : n < 50 ? 300   : 120;   // 0 = no limit
+
     this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
       .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(270).strength(.38))
-      .force('charge',  d3.forceManyBody<SimNode>().strength(-1600))
+      .force('charge',  d3.forceManyBody<SimNode>().strength(n > 40 ? -900 : -1600))
       .force('center',  d3.forceCenter(W/2, H/2))
       .force('collide', d3.forceCollide<SimNode>(115))
-      .alphaDecay(0.013);  // slower decay → more time to reach spread equilibrium
+      .alphaDecay(alphaDecay);
+
+    if (maxTicks > 0) {
+      let ticks = 0;
+      const origTick = this.sim.on('tick');
+      this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
+    }
 
     const NW=152, NH=56;
 
