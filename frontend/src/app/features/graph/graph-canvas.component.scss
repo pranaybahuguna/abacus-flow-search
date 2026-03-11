@@ -1,6 +1,6 @@
 :host{display:flex;flex:1;position:relative;overflow:hidden;background:#030810}
 .wrap{position:relative;width:100%;height:100%;display:flex}
-.graph-svg{width:100%;height:100%;display:block}
+.graph-canvas{width:100%;height:100%;display:block}
 .loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(3,8,16,.7);z-index:50;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c4d8ee}
 .ring{width:32px;height:32px;border:2px solid #264e72;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}

@@ -14,8 +14,8 @@
     <span class="es">or click FULL MAP in the header</span>
   </div>
 
-  <!-- SVG rendered by D3 — always in DOM so @ViewChild resolves before data arrives -->
-  <svg #svg class="graph-svg" [hidden]="!(subgraph$ | async)"></svg>
+  <!-- Canvas rendered by D3 — always in DOM so @ViewChild resolves before data arrives -->
+  <canvas #canvas class="graph-canvas" [hidden]="!(subgraph$ | async)"></canvas>
 
   <!-- Top toolbar -->
   <div class="bar-top" *ngIf="subgraph$ | async as sg">
