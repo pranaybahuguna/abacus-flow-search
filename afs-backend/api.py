@@ -189,20 +189,29 @@ def health():
 
 @app.get("/api/search", response_model=SearchOut)
 def search(
-    q:           str                  = Query(..., min_length=1),
-    entity_type: Optional[EntityType] = Query(None),
+    q:             str                  = Query(..., min_length=1),
+    entity_type:   Optional[EntityType] = Query(None),
+    include_flows: bool                 = Query(False, description="Include flow results in search output"),
+    top_k:         int                  = Query(20, ge=1, le=50, description="Max candidates to return"),
 ):
     """
     STEP 1 — LangChain vector search via Chroma + OpenAI embeddings.
     Returns candidates with confidence tier (HIGH/MEDIUM/LOW).
     Angular auto-triggers /api/graph if tier == HIGH.
     """
-    r = _vsearch.search(q, entity_type=entity_type)
+    r = _vsearch.search(q, entity_type=entity_type, top_k=top_k)
+
+    # Filter out flow candidates unless explicitly requested.
+    # Skip filter when entity_type is already set (caller wants a specific type).
+    candidates_raw = r.candidates
+    if not include_flows and entity_type is None:
+        candidates_raw = [c for c in candidates_raw if c.entity_type != "flow"]
+
     search_out = SearchOut(
         tier=r.tier,
         message=r.message,
         resolved=_candidate_out(r.resolved) if r.resolved else None,
-        candidates=[_candidate_out(c) for c in r.candidates]
+        candidates=[_candidate_out(c) for c in candidates_raw]
     )
     return search_out
 

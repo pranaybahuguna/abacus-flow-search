@@ -13,10 +13,11 @@ export class SearchService {
   readonly results$ = this._r.asObservable();
   readonly loading$ = this._l.asObservable();
 
-  search(query:string, entityType?:EntityType) {
+  search(query: string, entityType?: EntityType, includeFlows = false) {
     this._l.next(true);
     let p = new HttpParams().set('q', query);
-    if (entityType) p = p.set('entity_type', entityType);
+    if (entityType)    p = p.set('entity_type', entityType);
+    if (includeFlows)  p = p.set('include_flows', 'true');
     return this.http.get<SearchResponse>('/api/search', {params:p}).pipe(
       tap(r => { this._r.next(r); this._l.next(false); }),
       catchError(() => {
