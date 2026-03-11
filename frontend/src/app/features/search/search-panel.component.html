@@ -9,11 +9,21 @@
       <div class="spin" *ngIf="loading()"></div>
     </div>
     <button class="btn-s" (click)="onEnter()" [disabled]="loading()||!query().trim()">SEARCH →</button>
-    <label class="flow-toggle">
-      <input type="checkbox" [ngModel]="includeFlows()" (ngModelChange)="includeFlows.set($event)">
-      <span class="ft-box"></span>
-      <span class="ft-lbl">Include flows in search</span>
-    </label>
+    <div class="type-filters">
+      <span class="tf-hdr">SHOW</span>
+      <label class="type-filter">
+        <input type="checkbox" [ngModel]="inclSystems()" (ngModelChange)="inclSystems.set($event)">
+        <span class="tf-box"></span><span class="tf-lbl">Systems</span>
+      </label>
+      <label class="type-filter">
+        <input type="checkbox" [ngModel]="inclBps()" (ngModelChange)="inclBps.set($event)">
+        <span class="tf-box"></span><span class="tf-lbl">Processes</span>
+      </label>
+      <label class="type-filter">
+        <input type="checkbox" [ngModel]="inclFlows()" (ngModelChange)="inclFlows.set($event)">
+        <span class="tf-box"></span><span class="tf-lbl">Flows</span>
+      </label>
+    </div>
   </div>
 
   <!-- Pinned entities bar — only shown when at least one entity is pinned -->

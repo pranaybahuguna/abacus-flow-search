@@ -189,10 +189,12 @@ def health():
 
 @app.get("/api/search", response_model=SearchOut)
 def search(
-    q:             str                  = Query(..., min_length=1),
-    entity_type:   Optional[EntityType] = Query(None),
-    include_flows: bool                 = Query(False, description="Include flow results in search output"),
-    top_k:         int                  = Query(20, ge=1, le=50, description="Max candidates to return"),
+    q:               str                  = Query(..., min_length=1),
+    entity_type:     Optional[EntityType] = Query(None),
+    include_systems: bool                 = Query(True,  description="Include system results"),
+    include_bps:     bool                 = Query(True,  description="Include business-process results"),
+    include_flows:   bool                 = Query(False, description="Include flow results"),
+    top_k:           int                  = Query(20, ge=1, le=50, description="Max candidates to return"),
 ):
     """
     STEP 1 — LangChain vector search via Chroma + OpenAI embeddings.
@@ -201,11 +203,15 @@ def search(
     """
     r = _vsearch.search(q, entity_type=entity_type, top_k=top_k)
 
-    # Filter out flow candidates unless explicitly requested.
-    # Skip filter when entity_type is already set (caller wants a specific type).
+    # Type filter — only applied when no explicit entity_type is requested,
+    # so callers that pin a specific type are never affected.
     candidates_raw = r.candidates
-    if not include_flows and entity_type is None:
-        candidates_raw = [c for c in candidates_raw if c.entity_type != "flow"]
+    if entity_type is None:
+        allowed: set[str] = set()
+        if include_systems: allowed.add("system")
+        if include_bps:     allowed.add("business_process")
+        if include_flows:   allowed.add("flow")
+        candidates_raw = [c for c in candidates_raw if c.entity_type in allowed]
 
     search_out = SearchOut(
         tier=r.tier,

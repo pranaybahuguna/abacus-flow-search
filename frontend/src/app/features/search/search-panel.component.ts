@@ -37,7 +37,9 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
   activeId       = signal<string|null>(null);
   tierDismissed  = signal(false);
   quickCollapsed = signal(false);
-  includeFlows   = signal(false);
+  inclSystems    = signal(true);
+  inclBps        = signal(true);
+  inclFlows      = signal(false);
   /** Set of entity_ids currently being fetched for pinning */
   pinLoading     = signal<Set<string>>(new Set());
   exampleGroups  = EXAMPLE_GROUPS;
@@ -64,9 +66,10 @@ export class SearchPanelComponent implements OnInit, OnDestroy {
 
   private _run(q:string) {
     this.tierDismissed.set(false);
-    this.ss.search(q, undefined, this.includeFlows()).subscribe(res => {
-      if (res.tier==='HIGH' && res.resolved) this.pick(res.resolved);
-    });
+    this.ss.search(q, undefined, this.inclSystems(), this.inclBps(), this.inclFlows())
+      .subscribe(res => {
+        if (res.tier==='HIGH' && res.resolved) this.pick(res.resolved);
+      });
   }
 
   dismissTier()        { this.tierDismissed.set(true); }
