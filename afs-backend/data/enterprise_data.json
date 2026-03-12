@@ -423,7 +423,10 @@
       "id": "FLOW_001",
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
-      "information_entity": "Trade Confirmation",
+      "information_entity": [
+        "Trade Confirmation",
+        "Allocation Report"
+      ],
       "business_process": [
         "Trade Settlement"
       ],
@@ -443,7 +446,11 @@
       "id": "FLOW_002",
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
-      "information_entity": "Settlement Payment Instruction",
+      "information_entity": [
+        "Settlement Payment Instruction",
+        "Settlement Netting Advice",
+        "DVP Settlement Notice"
+      ],
       "business_process": [
         "Trade Settlement"
       ],
@@ -463,7 +470,10 @@
       "id": "FLOW_003",
       "source_app": "SYS_004",
       "sinc_app": "SYS_003",
-      "information_entity": "SWIFT Payment Message",
+      "information_entity": [
+        "SWIFT Payment Message",
+        "MT103 Payment Order"
+      ],
       "business_process": [
         "Cross-Border Payment"
       ],
@@ -483,7 +493,10 @@
       "id": "FLOW_004",
       "source_app": "SYS_004",
       "sinc_app": "SYS_007",
-      "information_entity": "Payment Instruction for Screening",
+      "information_entity": [
+        "Payment Instruction for Screening",
+        "Sanctions Hit Alert"
+      ],
       "business_process": [
         "Cross-Border Payment",
         "AML and Sanctions Screening"
@@ -504,7 +517,11 @@
       "id": "FLOW_005",
       "source_app": "SYS_002",
       "sinc_app": "SYS_004",
-      "information_entity": "Customer Payment Instruction",
+      "information_entity": [
+        "Customer Payment Instruction",
+        "Payment Authorization",
+        "Debit Notification"
+      ],
       "business_process": [
         "Retail Payment"
       ],
@@ -524,7 +541,10 @@
       "id": "FLOW_006",
       "source_app": "SYS_005",
       "sinc_app": "SYS_004",
-      "information_entity": "Treasury Payment Instruction",
+      "information_entity": [
+        "Treasury Payment Instruction",
+        "FX Settlement Notice"
+      ],
       "business_process": [
         "Treasury Settlement"
       ],
@@ -544,7 +564,11 @@
       "id": "FLOW_007",
       "source_app": "SYS_001",
       "sinc_app": "SYS_010",
-      "information_entity": "Trade Positions",
+      "information_entity": [
+        "Trade Positions",
+        "Greeks & Sensitivities",
+        "Intraday P&L"
+      ],
       "business_process": [
         "Risk Calculation"
       ],
@@ -564,7 +588,10 @@
       "id": "FLOW_008",
       "source_app": "SYS_006",
       "sinc_app": "SYS_010",
-      "information_entity": "Securities Positions",
+      "information_entity": [
+        "Securities Positions",
+        "Custody Holdings Report"
+      ],
       "business_process": [
         "Risk Calculation"
       ],
@@ -584,7 +611,11 @@
       "id": "FLOW_009",
       "source_app": "SYS_001",
       "sinc_app": "SYS_008",
-      "information_entity": "Trade Data",
+      "information_entity": [
+        "Trade Data",
+        "MiFID II Transaction Report",
+        "EMIR Trade Report"
+      ],
       "business_process": [
         "Regulatory Reporting",
         "Market Risk Management"
@@ -605,7 +636,10 @@
       "id": "FLOW_010",
       "source_app": "SYS_004",
       "sinc_app": "SYS_008",
-      "information_entity": "Payment Transaction Data",
+      "information_entity": [
+        "Payment Transaction Data",
+        "PSD2 Transaction Report"
+      ],
       "business_process": [
         "Regulatory Reporting"
       ],
@@ -625,7 +659,11 @@
       "id": "FLOW_011",
       "source_app": "SYS_002",
       "sinc_app": "SYS_008",
-      "information_entity": "Customer Account Data",
+      "information_entity": [
+        "Customer Account Data",
+        "KYC Profile",
+        "Beneficial Owner Data"
+      ],
       "business_process": [
         "Regulatory Reporting"
       ],
@@ -645,7 +683,10 @@
       "id": "FLOW_012",
       "source_app": "SYS_009",
       "sinc_app": "SYS_002",
-      "information_entity": "Trade Finance Utilisation",
+      "information_entity": [
+        "Trade Finance Utilisation",
+        "Letter of Credit Drawdown"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -665,7 +706,11 @@
       "id": "FLOW_013",
       "source_app": "SYS_003",
       "sinc_app": "SYS_005",
-      "information_entity": "Inbound SWIFT Payment Confirmation",
+      "information_entity": [
+        "Inbound SWIFT Payment Confirmation",
+        "MT199 Free Format Message",
+        "Nostro Credit Advice"
+      ],
       "business_process": [
         "Nostro Reconciliation"
       ],
@@ -685,7 +730,10 @@
       "id": "FLOW_014",
       "source_app": "SYS_007",
       "sinc_app": "SYS_008",
-      "information_entity": "Compliance Alert Data",
+      "information_entity": [
+        "Compliance Alert Data",
+        "Sanctions Match Report"
+      ],
       "business_process": [
         "AML and Sanctions Screening",
         "Regulatory Reporting"
@@ -706,7 +754,10 @@
       "id": "FLOW_015",
       "source_app": "SYS_014",
       "sinc_app": "SYS_001",
-      "information_entity": "FX Spot and Forward Rate Feed",
+      "information_entity": [
+        "FX Spot and Forward Rate Feed",
+        "FX Volatility Surface"
+      ],
       "business_process": [
         "FX Trade Lifecycle"
       ],
@@ -726,7 +777,10 @@
       "id": "FLOW_016",
       "source_app": "SYS_001",
       "sinc_app": "SYS_005",
-      "information_entity": "FX Deal Notification",
+      "information_entity": [
+        "FX Deal Notification",
+        "Deal Confirmation"
+      ],
       "business_process": [
         "FX Trade Lifecycle"
       ],
@@ -746,7 +800,10 @@
       "id": "FLOW_017",
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
-      "information_entity": "FX Confirmation Data",
+      "information_entity": [
+        "FX Confirmation Data",
+        "MT300 FX Confirmation"
+      ],
       "business_process": [
         "FX Trade Lifecycle"
       ],
@@ -766,7 +823,10 @@
       "id": "FLOW_018",
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
-      "information_entity": "FX Cash Settlement Instruction",
+      "information_entity": [
+        "FX Cash Settlement Instruction",
+        "Settlement Nostro Debit"
+      ],
       "business_process": [
         "FX Trade Lifecycle"
       ],
@@ -786,7 +846,10 @@
       "id": "FLOW_019",
       "source_app": "SYS_003",
       "sinc_app": "SYS_001",
-      "information_entity": "FX SWIFT Confirmation Receipt",
+      "information_entity": [
+        "FX SWIFT Confirmation Receipt",
+        "MT300 Acknowledgement"
+      ],
       "business_process": [
         "FX Trade Lifecycle"
       ],
@@ -806,7 +869,11 @@
       "id": "FLOW_020",
       "source_app": "SYS_014",
       "sinc_app": "SYS_001",
-      "information_entity": "Derivatives Pricing Curves and Vol Surfaces",
+      "information_entity": [
+        "Derivatives Pricing Curves and Vol Surfaces",
+        "Interest Rate Curves",
+        "Credit Spread Curves"
+      ],
       "business_process": [
         "Derivatives Lifecycle Management"
       ],
@@ -826,7 +893,11 @@
       "id": "FLOW_021",
       "source_app": "SYS_001",
       "sinc_app": "SYS_006",
-      "information_entity": "Derivatives Lifecycle Event",
+      "information_entity": [
+        "Derivatives Lifecycle Event",
+        "Novation Notice",
+        "Termination Notice"
+      ],
       "business_process": [
         "Derivatives Lifecycle Management"
       ],
@@ -846,7 +917,11 @@
       "id": "FLOW_022",
       "source_app": "SYS_001",
       "sinc_app": "SYS_010",
-      "information_entity": "Options Greeks and Derivatives Sensitivities",
+      "information_entity": [
+        "Options Greeks and Derivatives Sensitivities",
+        "Delta/Gamma Report",
+        "Vega Exposure"
+      ],
       "business_process": [
         "Derivatives Lifecycle Management"
       ],
@@ -866,7 +941,10 @@
       "id": "FLOW_023",
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
-      "information_entity": "Derivatives Cash Flow Payment Instruction",
+      "information_entity": [
+        "Derivatives Cash Flow Payment Instruction",
+        "Coupon Payment Notice"
+      ],
       "business_process": [
         "Derivatives Lifecycle Management"
       ],
@@ -886,7 +964,11 @@
       "id": "FLOW_024",
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
-      "information_entity": "Derivatives P&L and Accounting Entries",
+      "information_entity": [
+        "Derivatives P&L and Accounting Entries",
+        "MTM Valuation",
+        "Accrued Interest Entry"
+      ],
       "business_process": [
         "Derivatives Lifecycle Management"
       ],
@@ -906,7 +988,11 @@
       "id": "FLOW_025",
       "source_app": "SYS_006",
       "sinc_app": "SYS_013",
-      "information_entity": "Securities Settlement Instruction to CSD",
+      "information_entity": [
+        "Securities Settlement Instruction to CSD",
+        "DVP Delivery Instruction",
+        "Settlement Date Notice"
+      ],
       "business_process": [
         "Securities CSD Settlement"
       ],
@@ -926,7 +1012,10 @@
       "id": "FLOW_026",
       "source_app": "SYS_013",
       "sinc_app": "SYS_006",
-      "information_entity": "CSD Settlement Confirmation",
+      "information_entity": [
+        "CSD Settlement Confirmation",
+        "Matched Settlement Notice"
+      ],
       "business_process": [
         "Securities CSD Settlement"
       ],
@@ -946,7 +1035,10 @@
       "id": "FLOW_027",
       "source_app": "SYS_013",
       "sinc_app": "SYS_003",
-      "information_entity": "Cross-Border DVP SWIFT Settlement Message",
+      "information_entity": [
+        "Cross-Border DVP SWIFT Settlement Message",
+        "MT543 Receive Free"
+      ],
       "business_process": [
         "Securities CSD Settlement"
       ],
@@ -966,7 +1058,10 @@
       "id": "FLOW_028",
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
-      "information_entity": "Settled Securities Position Accounting Entry",
+      "information_entity": [
+        "Settled Securities Position Accounting Entry",
+        "Custody Debit Entry"
+      ],
       "business_process": [
         "Securities CSD Settlement"
       ],
@@ -986,7 +1081,11 @@
       "id": "FLOW_029",
       "source_app": "SYS_014",
       "sinc_app": "SYS_006",
-      "information_entity": "Corporate Action Announcement",
+      "information_entity": [
+        "Corporate Action Announcement",
+        "CA Event Notification",
+        "Record Date Notice"
+      ],
       "business_process": [
         "Corporate Actions Processing"
       ],
@@ -1006,7 +1105,10 @@
       "id": "FLOW_030",
       "source_app": "SYS_006",
       "sinc_app": "SYS_002",
-      "information_entity": "Corporate Action Entitlement Notification",
+      "information_entity": [
+        "Corporate Action Entitlement Notification",
+        "Dividend Entitlement"
+      ],
       "business_process": [
         "Corporate Actions Processing"
       ],
@@ -1026,7 +1128,10 @@
       "id": "FLOW_031",
       "source_app": "SYS_006",
       "sinc_app": "SYS_004",
-      "information_entity": "Corporate Action Cash Distribution Instruction",
+      "information_entity": [
+        "Corporate Action Cash Distribution Instruction",
+        "Dividend Payment Instruction"
+      ],
       "business_process": [
         "Corporate Actions Processing"
       ],
@@ -1046,7 +1151,10 @@
       "id": "FLOW_032",
       "source_app": "SYS_006",
       "sinc_app": "SYS_015",
-      "information_entity": "Corporate Action Accounting Entry",
+      "information_entity": [
+        "Corporate Action Accounting Entry",
+        "Dividend Accrual Entry"
+      ],
       "business_process": [
         "Corporate Actions Processing"
       ],
@@ -1066,7 +1174,11 @@
       "id": "FLOW_033",
       "source_app": "SYS_012",
       "sinc_app": "SYS_011",
-      "information_entity": "Approved Corporate Borrower Profile",
+      "information_entity": [
+        "Approved Corporate Borrower Profile",
+        "Credit Committee Approval",
+        "Facility Agreement"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1086,7 +1198,11 @@
       "id": "FLOW_034",
       "source_app": "SYS_011",
       "sinc_app": "SYS_002",
-      "information_entity": "Loan Drawdown Instruction",
+      "information_entity": [
+        "Loan Drawdown Instruction",
+        "Drawdown Notice",
+        "Utilisation Request"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1106,7 +1222,10 @@
       "id": "FLOW_035",
       "source_app": "SYS_002",
       "sinc_app": "SYS_011",
-      "information_entity": "Loan Repayment and Interest Receipt Notification",
+      "information_entity": [
+        "Loan Repayment and Interest Receipt Notification",
+        "Principal Receipt Advice"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1126,7 +1245,10 @@
       "id": "FLOW_036",
       "source_app": "SYS_011",
       "sinc_app": "SYS_004",
-      "information_entity": "Loan Repayment Payment Instruction",
+      "information_entity": [
+        "Loan Repayment Payment Instruction",
+        "Interest Payment Instruction"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1146,7 +1268,11 @@
       "id": "FLOW_037",
       "source_app": "SYS_011",
       "sinc_app": "SYS_010",
-      "information_entity": "Loan Credit Risk Exposure",
+      "information_entity": [
+        "Loan Credit Risk Exposure",
+        "PD/LGD/EAD Data",
+        "RWA Report"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1166,7 +1292,10 @@
       "id": "FLOW_038",
       "source_app": "SYS_011",
       "sinc_app": "SYS_008",
-      "information_entity": "Loan Portfolio and Covenant Data",
+      "information_entity": [
+        "Loan Portfolio and Covenant Data",
+        "Covenant Compliance Report"
+      ],
       "business_process": [
         "Loan Origination & Servicing"
       ],
@@ -1186,7 +1315,10 @@
       "id": "FLOW_039",
       "source_app": "SYS_012",
       "sinc_app": "SYS_007",
-      "information_entity": "Customer AML Screening Request",
+      "information_entity": [
+        "Customer AML Screening Request",
+        "Watchlist Match Query"
+      ],
       "business_process": [
         "Customer Onboarding & KYC"
       ],
@@ -1206,7 +1338,11 @@
       "id": "FLOW_040",
       "source_app": "SYS_007",
       "sinc_app": "SYS_012",
-      "information_entity": "AML and Sanctions Clearance",
+      "information_entity": [
+        "AML and Sanctions Clearance",
+        "Customer Risk Score",
+        "Cleared-to-Proceed Notice"
+      ],
       "business_process": [
         "Customer Onboarding & KYC"
       ],
@@ -1226,7 +1362,11 @@
       "id": "FLOW_041",
       "source_app": "SYS_012",
       "sinc_app": "SYS_002",
-      "information_entity": "New Customer Account Creation Request",
+      "information_entity": [
+        "New Customer Account Creation Request",
+        "CIF Record",
+        "Account Opening Form"
+      ],
       "business_process": [
         "Customer Onboarding & KYC"
       ],
@@ -1246,7 +1386,10 @@
       "id": "FLOW_042",
       "source_app": "SYS_002",
       "sinc_app": "SYS_008",
-      "information_entity": "New Customer KYC Profile for Regulatory Reporting",
+      "information_entity": [
+        "New Customer KYC Profile for Regulatory Reporting",
+        "Beneficial Owner Declaration"
+      ],
       "business_process": [
         "Customer Onboarding & KYC"
       ],
@@ -1266,7 +1409,11 @@
       "id": "FLOW_043",
       "source_app": "SYS_009",
       "sinc_app": "SYS_003",
-      "information_entity": "SWIFT Documentary Credit Message MT700/MT710",
+      "information_entity": [
+        "SWIFT Documentary Credit Message MT700/MT710",
+        "Letter of Credit",
+        "MT700 Issuance"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -1286,7 +1433,10 @@
       "id": "FLOW_044",
       "source_app": "SYS_003",
       "sinc_app": "SYS_009",
-      "information_entity": "Inbound Documentary SWIFT Message",
+      "information_entity": [
+        "Inbound Documentary SWIFT Message",
+        "MT710 Amendment"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -1306,7 +1456,10 @@
       "id": "FLOW_045",
       "source_app": "SYS_009",
       "sinc_app": "SYS_007",
-      "information_entity": "Trade Finance Party Screening Request",
+      "information_entity": [
+        "Trade Finance Party Screening Request",
+        "Counterparty Sanctions Check"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -1326,7 +1479,10 @@
       "id": "FLOW_046",
       "source_app": "SYS_009",
       "sinc_app": "SYS_004",
-      "information_entity": "Trade Finance Settlement Payment",
+      "information_entity": [
+        "Trade Finance Settlement Payment",
+        "LC Payment Instruction"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -1346,7 +1502,10 @@
       "id": "FLOW_047",
       "source_app": "SYS_009",
       "sinc_app": "SYS_008",
-      "information_entity": "Trade Finance Portfolio Reporting Data",
+      "information_entity": [
+        "Trade Finance Portfolio Reporting Data",
+        "Outstanding LC Exposure Report"
+      ],
       "business_process": [
         "Trade Finance Documentary Credit"
       ],
@@ -1366,7 +1525,10 @@
       "id": "FLOW_048",
       "source_app": "SYS_004",
       "sinc_app": "SYS_005",
-      "information_entity": "Real-time Payment Outflow Feed",
+      "information_entity": [
+        "Real-time Payment Outflow Feed",
+        "Intraday Cash Flow Event"
+      ],
       "business_process": [
         "Intraday Liquidity Management"
       ],
@@ -1386,7 +1548,10 @@
       "id": "FLOW_049",
       "source_app": "SYS_014",
       "sinc_app": "SYS_005",
-      "information_entity": "FX Rate for Nostro Revaluation",
+      "information_entity": [
+        "FX Rate for Nostro Revaluation",
+        "End-of-Day FX Rate"
+      ],
       "business_process": [
         "Intraday Liquidity Management"
       ],
@@ -1406,7 +1571,11 @@
       "id": "FLOW_050",
       "source_app": "SYS_005",
       "sinc_app": "SYS_010",
-      "information_entity": "Intraday Liquidity Position",
+      "information_entity": [
+        "Intraday Liquidity Position",
+        "Available Balance Update",
+        "Limit Utilisation"
+      ],
       "business_process": [
         "Intraday Liquidity Management"
       ],
@@ -1426,7 +1595,10 @@
       "id": "FLOW_051",
       "source_app": "SYS_005",
       "sinc_app": "SYS_008",
-      "information_entity": "Nostro Balance and Intraday Liquidity Report",
+      "information_entity": [
+        "Nostro Balance and Intraday Liquidity Report",
+        "LCR Metrics"
+      ],
       "business_process": [
         "Intraday Liquidity Management"
       ],
@@ -1446,7 +1618,11 @@
       "id": "FLOW_052",
       "source_app": "SYS_014",
       "sinc_app": "SYS_010",
-      "information_entity": "Market Risk Scenarios and Stress Curves",
+      "information_entity": [
+        "Market Risk Scenarios and Stress Curves",
+        "Stress Test Scenarios",
+        "Historical Simulation Data"
+      ],
       "business_process": [
         "Market Risk Management"
       ],
@@ -1466,7 +1642,11 @@
       "id": "FLOW_053",
       "source_app": "SYS_010",
       "sinc_app": "SYS_008",
-      "information_entity": "Risk Metrics and Regulatory Capital Report",
+      "information_entity": [
+        "Risk Metrics and Regulatory Capital Report",
+        "VaR Report",
+        "Basel III Capital Ratio"
+      ],
       "business_process": [
         "Market Risk Management"
       ],
@@ -1486,7 +1666,11 @@
       "id": "FLOW_054",
       "source_app": "SYS_010",
       "sinc_app": "SYS_001",
-      "information_entity": "VaR Limit Breach Alert",
+      "information_entity": [
+        "VaR Limit Breach Alert",
+        "Risk Limit Utilisation",
+        "Escalation Notice"
+      ],
       "business_process": [
         "Market Risk Management"
       ],
@@ -1506,7 +1690,11 @@
       "id": "FLOW_055",
       "source_app": "SYS_001",
       "sinc_app": "SYS_015",
-      "information_entity": "Trading Book P&L and Fair Value Accounting",
+      "information_entity": [
+        "Trading Book P&L and Fair Value Accounting",
+        "MTM P&L Report",
+        "Fair Value Hierarchy"
+      ],
       "business_process": [
         "Market Risk Management"
       ],
@@ -1526,7 +1714,10 @@
       "id": "FLOW_056",
       "source_app": "SYS_002",
       "sinc_app": "SYS_004",
-      "information_entity": "Cross-Border Payment Initiation",
+      "information_entity": [
+        "Cross-Border Payment Initiation",
+        "MT101 Request for Transfer"
+      ],
       "business_process": [
         "Cross-Border Payment"
       ],
@@ -1546,7 +1737,10 @@
       "id": "FLOW_057",
       "source_app": "SYS_005",
       "sinc_app": "SYS_004",
-      "information_entity": "Cross-Border Treasury Payment Instruction",
+      "information_entity": [
+        "Cross-Border Treasury Payment Instruction",
+        "Correspondent Bank Instruction"
+      ],
       "business_process": [
         "Cross-Border Payment"
       ],
@@ -1566,7 +1760,10 @@
       "id": "FLOW_058",
       "source_app": "SYS_004",
       "sinc_app": "SYS_007",
-      "information_entity": "Cross-Border Payment Sanctions Screening",
+      "information_entity": [
+        "Cross-Border Payment Sanctions Screening",
+        "OFAC Screening Result"
+      ],
       "business_process": [
         "Cross-Border Payment"
       ],
@@ -1586,7 +1783,11 @@
       "id": "FLOW_059",
       "source_app": "SYS_004",
       "sinc_app": "SYS_003",
-      "information_entity": "Trade Settlement SWIFT Dispatch",
+      "information_entity": [
+        "Trade Settlement SWIFT Dispatch",
+        "MT202 Financial Institution Transfer",
+        "Settlement Confirmation"
+      ],
       "business_process": [
         "Trade Settlement",
         "Cross-Border Payment"
@@ -1607,7 +1808,11 @@
       "id": "FLOW_060",
       "source_app": "SYS_007",
       "sinc_app": "SYS_008",
-      "information_entity": "AML Regulatory Reporting Data",
+      "information_entity": [
+        "AML Regulatory Reporting Data",
+        "SAR Filing Data",
+        "CTR Report"
+      ],
       "business_process": [
         "AML and Sanctions Screening",
         "Regulatory Reporting"
