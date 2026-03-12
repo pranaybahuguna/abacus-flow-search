@@ -24,6 +24,16 @@
         <span class="tf-box"></span><span class="tf-lbl">Flows</span>
       </label>
     </div>
+    <!-- Search mode: semantic vs exact substring -->
+    <div class="mode-row">
+      <span class="tf-hdr">MODE</span>
+      <div class="mode-pills">
+        <button class="mode-pill" [class.mode-pill--active]="!exactSearch()"
+                (click)="exactSearch.set(false)" title="Semantic similarity (default)">◎ SIMILAR</button>
+        <button class="mode-pill" [class.mode-pill--active]="exactSearch()"
+                (click)="exactSearch.set(true)"  title="Exact / substring match">⊘ EXACT</button>
+      </div>
+    </div>
   </div>
 
   <!-- Pinned entities bar — only shown when at least one entity is pinned -->

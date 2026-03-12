@@ -14,14 +14,15 @@ export class SearchService {
   readonly loading$ = this._l.asObservable();
 
   search(query: string, entityType?: EntityType,
-         inclSystems = true, inclBps = true, inclFlows = false) {
+         inclSystems = true, inclBps = true, inclFlows = false, exact = false) {
     this._l.next(true);
     let p = new HttpParams().set('q', query);
     if (entityType) p = p.set('entity_type', entityType);
     // Always send all three flags so backend never falls back to defaults
     p = p.set('include_systems', String(inclSystems))
          .set('include_bps',     String(inclBps))
-         .set('include_flows',   String(inclFlows));
+         .set('include_flows',   String(inclFlows))
+         .set('exact',           String(exact));
     return this.http.get<SearchResponse>('/api/search', {params:p}).pipe(
       tap(r => { this._r.next(r); this._l.next(false); }),
       catchError(() => {

@@ -128,6 +128,10 @@
 .pw-list{padding:5px 9px 7px;display:flex;flex-direction:column;gap:3px}
 .pw-dir{font-size:9px;font-weight:700;flex-shrink:0;width:12px;text-align:center}
 
+/* ── Information entity chips (edge detail) ─────────────────────────────── */
+.ie-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
+.ie-chip{padding:2px 7px;border-radius:3px;font-size:7.5px;background:#0a1e38;border:1px solid #2a5a8a;color:#80c8ff;white-space:nowrap}
+
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
 .sys{padding:8px 10px;border-radius:7px;border:1px solid;margin-bottom:4px}
 .sr{font-size:7.5px;letter-spacing:.1em;margin-bottom:4px}

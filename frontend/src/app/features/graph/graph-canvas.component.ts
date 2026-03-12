@@ -39,6 +39,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   private _raf:       number | null = null;
   private _edgeFactor = new Map<string, number>();
   private _dragMoved  = false;
+  private _tickCount  = 0;   // throttle: only redraw every N simulation ticks
   private destroy     = new Subject<void>();
 
   ngAfterViewInit() {
@@ -257,13 +258,29 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
                      : n < 150 ? -900
                      :           -500;
 
+    this._tickCount = 0;
+
+    // For larger graphs pre-run some ticks synchronously before starting the
+    // visual loop — the graph is ~70% settled on first paint, far less jumpy.
+    const preTicks = n < 50 ? 0 : n < 150 ? 20 : 40;
+
     this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
       .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(270).strength(.38))
       .force('charge',  d3.forceManyBody<SimNode>().strength(charge))
       .force('center',  d3.forceCenter(W/2, H/2))
       .force('collide', d3.forceCollide<SimNode>(115))
       .alphaDecay(alphaDecay)
-      .on('tick', () => this._scheduleFrame());
+      .stop();
+
+    // Pre-tick synchronously (no render) to jump-start layout
+    for (let i = 0; i < preTicks; i++) this.sim.tick();
+
+    // Throttle: only schedule a canvas redraw every 3rd tick — reduces draw
+    // calls by 67% during simulation with no visible quality loss.
+    const drawEvery = n < 50 ? 1 : 3;
+    this.sim.on('tick', () => {
+      if (++this._tickCount % drawEvery === 0) this._scheduleFrame();
+    }).restart();
 
     if (maxTicks > 0) {
       let ticks = 0;
@@ -551,10 +568,11 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // Arrow
     this._arrow(ctx, ex, ey, Math.atan2(ey - cpy, ex - cpx), color, 9);
 
-    // Label
-    const lx = pmx + ox*0.35, ly = pmy - oy*0.35;
-    const raw = e.information_entity ?? '';
-    const lbl = raw.length > 30 ? raw.slice(0,29)+'…' : raw;
+    // Label — information_entity is now string[]
+    const lx  = pmx + ox*0.35, ly = pmy - oy*0.35;
+    const ie  = e.information_entity;
+    const raw = Array.isArray(ie) ? ie.join(' · ') : (ie ?? '');
+    const lbl = raw.length > 32 ? raw.slice(0, 31) + '…' : raw;
     ctx.font = '9.5px "IBM Plex Mono",monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const tw = ctx.measureText(lbl).width;

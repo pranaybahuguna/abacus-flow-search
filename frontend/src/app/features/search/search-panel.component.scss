@@ -41,6 +41,13 @@ input::placeholder{color:#7aaac8}
 .tf-lbl{font-size:8px;color:#7aaac8;letter-spacing:.07em;transition:color .15s}
 .type-filter:hover .tf-lbl{color:#90c8ff}
 
+/* ── search mode toggle (similar / exact) ────────────────────────── */
+.mode-row{display:flex;align-items:center;gap:7px;padding:6px 0 2px}
+.mode-pills{display:flex;gap:3px}
+.mode-pill{padding:3px 9px;border-radius:3px;border:1px solid #2a5a82;background:#0a1828;color:#5a88b0;font-size:7.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;cursor:pointer;transition:all .15s;white-space:nowrap}
+.mode-pill:hover{border-color:#4a80c0;color:#90b8d8}
+.mode-pill--active{background:#0d2a50;border-color:#4a90d9;color:#90c8ff;font-weight:700}
+
 /* ── quick query chips ───────────────────────────────────────────── */
 .eg{margin-bottom:6px}
 .eg-lbl{font-size:7px;letter-spacing:.14em;color:#7aaec8;margin-bottom:3px;margin-top:5px;font-weight:600}

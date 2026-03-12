@@ -167,6 +167,72 @@ class GraphStore:
             print(f"✅  Graph loaded: {self._G.number_of_nodes()} nodes, "
                   f"{self._G.number_of_edges()} edges")
 
+    # ── Lexical / exact-match search ──────────────────────────────────────────
+
+    def search_lexical(
+        self,
+        q:               str,
+        include_systems: bool = True,
+        include_bps:     bool = True,
+        include_flows:   bool = False,
+        top_k:           int  = 20,
+    ) -> list[dict]:
+        """
+        Case-insensitive substring search across the in-memory graph.
+        Scoring: 1.0 = name starts with q, 0.95 = name contains q,
+                 0.85 = description/tag contains q, 0.7 = id match.
+        Returns a list of dicts with keys: id, type, name, domain, score.
+        """
+        q_l = q.strip().lower()
+        hits: list[dict] = []
+
+        def _score(name: str, desc: str = "", tags: list | None = None) -> float | None:
+            n = name.lower()
+            if n.startswith(q_l):   return 1.0
+            if q_l in n:            return 0.95
+            if q_l in desc.lower(): return 0.85
+            if tags and any(q_l in t.lower() for t in tags): return 0.80
+            return None
+
+        if include_systems:
+            for nid, a in self._G.nodes(data=True):
+                s = _score(a.get("name",""), a.get("description", a.get("purpose","")),
+                           a.get("tags", []))
+                if s is None and q_l == nid.lower():
+                    s = 0.70
+                if s is not None:
+                    hits.append({"id": nid, "type": "system",
+                                 "name": a.get("name", nid),
+                                 "domain": a.get("domain"),
+                                 "score": s})
+
+        if include_bps:
+            for bp in self._G.graph.get("bp_index", {}).values():
+                s = _score(bp.get("name",""), bp.get("description",""))
+                if s is None and q_l == bp.get("id","").lower():
+                    s = 0.70
+                if s is not None:
+                    hits.append({"id": bp.get("id",""), "type": "business_process",
+                                 "name": bp.get("name",""),
+                                 "domain": None, "score": s})
+
+        if include_flows:
+            seen_ids: set[str] = set()
+            for s_node, t_node, d in self._G.edges(data=True):
+                eid = d.get("id","")
+                if not eid or eid in seen_ids:
+                    continue
+                ie = d.get("information_entity","")
+                ie_str = " ".join(ie) if isinstance(ie, list) else str(ie)
+                sc = _score(ie_str, d.get("message_description",""))
+                if sc is not None:
+                    seen_ids.add(eid)
+                    hits.append({"id": eid, "type": "flow",
+                                 "name": ie_str, "domain": None, "score": sc})
+
+        hits.sort(key=lambda h: -h["score"])
+        return hits[:top_k]
+
     # ── Basic lookups ─────────────────────────────────────────────────────────
 
     def get_system(self, sid: str) -> dict | None:

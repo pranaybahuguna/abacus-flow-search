@@ -64,20 +64,24 @@ class SearchOut(BaseModel):
 class SystemOut(BaseModel):
     id:str; name:str; domain:str; description:str; owner:str; tags:list[str]
     legal_entity:Optional[str]=None; major_business_process:list[str]=[]
-    ciat_computed:Optional[str]=None; active:bool=True
+    active:bool=True
     confidentiality:Optional[str]=None; data_storage_territory:Optional[str]=None
     pd_sensitivity_declared:Optional[str]=None
+    integrity:Optional[str]=None; availability:Optional[str]=None
+    traceability:Optional[str]=None
     # Pre-computed layout coordinates — present only on full-graph responses.
     # When set, the frontend renders directly without running a D3 simulation.
     layout_x:Optional[float]=None; layout_y:Optional[float]=None
 
 class FlowOut(BaseModel):
-    id:str; source_app:str; sinc_app:str; information_entity:str
+    id:str; source_app:str; sinc_app:str
+    information_entity:list[str]=[]   # array — one flow can carry multiple data entities
     business_process:list[str]=[]; functional_block:Optional[str]=None
     message_description:Optional[str]=None; transport_protocol:str
     criticality:str; frequency:str; exchange_nature:Optional[str]=None
-    ciat_computed:Optional[str]=None; confidentiality:Optional[str]=None
-    personal_data_protection:Optional[str]=None
+    confidentiality:Optional[str]=None; personal_data_protection:Optional[str]=None
+    integrity:Optional[str]=None; availability:Optional[str]=None
+    traceability:Optional[str]=None
 
 class SubgraphOut(BaseModel):
     label:str; regulatory:Optional[str]=None
@@ -101,21 +105,29 @@ def _sys(n: dict) -> SystemOut:
         owner=n.get("owner",""), tags=n.get("tags",[]),
         legal_entity=n.get("legal_entity"),
         major_business_process=n.get("major_business_process",[]),
-        ciat_computed=n.get("ciat_computed"),
         active=n.get("active", True),
         confidentiality=n.get("confidentiality"),
         data_storage_territory=n.get("data_storage_territory"),
         pd_sensitivity_declared=n.get("pd_sensitivity_declared", ""),
+        integrity=n.get("integrity"),
+        availability=n.get("availability"),
+        traceability=n.get("traceability"),
         layout_x=n.get("layout_x"),
         layout_y=n.get("layout_y"),
     )
+
+def _ie_list(raw) -> list[str]:
+    """Normalise information_entity to list[str] regardless of source format."""
+    if isinstance(raw, list):  return [str(x) for x in raw if x]
+    if isinstance(raw, str):   return [raw] if raw.strip() else []
+    return []
 
 def _flow(e: dict) -> FlowOut:
     return FlowOut(
         id=e.get("id",""),
         source_app=e.get("source_app", e.get("source","")),
         sinc_app=e.get("sinc_app", e.get("target","")),
-        information_entity=e.get("information_entity", e.get("data_entity","")),
+        information_entity=_ie_list(e.get("information_entity", e.get("data_entity",""))),
         business_process=e.get("business_process",[]),
         functional_block=e.get("functional_block"),
         message_description=e.get("message_description", e.get("description","")),
@@ -123,9 +135,11 @@ def _flow(e: dict) -> FlowOut:
         criticality=e.get("criticality",""),
         frequency=e.get("frequency",""),
         exchange_nature=e.get("exchange_nature"),
-        ciat_computed=e.get("ciat_computed"),
         confidentiality=e.get("confidentiality"),
         personal_data_protection=e.get("personal_data_protection"),
+        integrity=e.get("integrity"),
+        availability=e.get("availability"),
+        traceability=e.get("traceability"),
     )
 
 def _subgraph_out(sg: dict, max_nodes: int | None = None) -> SubgraphOut:
@@ -195,6 +209,7 @@ def search(
     include_bps:     bool                 = Query(True,  description="Include business-process results"),
     include_flows:   bool                 = Query(False, description="Include flow results"),
     top_k:           int                  = Query(20, ge=1, le=50, description="Max candidates to return"),
+    exact:           bool                 = Query(False, description="Exact / substring match instead of semantic similarity"),
 ):
     """
     STEP 1 — LangChain vector search via Chroma + OpenAI embeddings.
@@ -207,6 +222,35 @@ def search(
     Searching each enabled type separately guarantees proportional slots
     and matches how the DEPENDENCIES page finds systems reliably.
     """
+    # ── Exact / substring match — skips vector search entirely ───────────────
+    if exact:
+        hits = _graph.search_lexical(
+            q,
+            include_systems=include_systems,
+            include_bps=include_bps,
+            include_flows=include_flows,
+            top_k=top_k,
+        )
+        if not hits:
+            return SearchOut(tier="LOW", message=f"No exact matches found for '{q}'.", candidates=[])
+        # Wrap as CandidateOut (score=1.0 for name match, 0.9 for description)
+        cands = [CandidateOut(entity_id=h["id"], entity_type=h["type"],
+                              name=h["name"], score=h["score"],
+                              domain=h.get("domain")) for h in hits]
+        # Tier based on top score
+        top = cands[0].score
+        if top >= 1.0:
+            tier = "HIGH"; resolved = cands[0]
+            message = f"Exact match: '{cands[0].name}'"
+        elif len(cands) > 1:
+            tier = "MEDIUM"; resolved = None
+            message = f"{len(cands)} matches for '{q}'"
+        else:
+            tier = "HIGH"; resolved = cands[0]
+            message = f"Match: '{cands[0].name}'"
+        return SearchOut(tier=tier, message=message,
+                         resolved=resolved, candidates=cands)
+
     # ── Explicit entity_type: single-type search, no filtering needed ──────────
     if entity_type is not None:
         r = _vsearch.search(q, entity_type=entity_type, top_k=top_k)

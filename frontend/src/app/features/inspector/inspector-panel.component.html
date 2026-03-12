@@ -45,10 +45,12 @@
           {{node.active === false ? 'Inactive' : 'Active'}}
         </span>
       </div>
-      <div class="row"><span class="rl">Confidentiality</span><span class="rv">{{node.confidentiality}}</span></div>
-      <div class="row"><span class="rl">Data Territory</span> <span class="rv">{{node.data_storage_territory}}</span></div>
-      <div class="row"><span class="rl">CIAT</span>           <span class="rv">{{node.ciat_computed}}</span></div>
-      <div class="row"><span class="rl">PD Sensitivity</span> <span class="rv">{{node.pd_sensitivity_declared ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Confidentiality</span> <span class="rv">{{node.confidentiality ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Data Territory</span>  <span class="rv">{{node.data_storage_territory ?? '—'}}</span></div>
+      <div class="row"><span class="rl">PD Sensitivity</span>  <span class="rv">{{node.pd_sensitivity_declared ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Integrity</span>       <span class="rv">{{node.integrity ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Availability</span>    <span class="rv">{{node.availability ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Traceability</span>    <span class="rv">{{node.traceability ?? '—'}}</span></div>
 
       <div class="div"></div>
       <div class="sl">DESCRIPTION</div>
@@ -193,17 +195,27 @@
     @if (sel.kind==='edge' && sel.edge; as edge) {
       <div class="row"><span class="rl">Flow ID</span>           <span class="rv">{{edge.id}}</span></div>
       <div class="row"><span class="rl">Business Process</span>  <span class="rv">{{(edge.business_process || []).join(', ')}}</span></div>
-      <div class="row"><span class="rl">Functional Block</span>  <span class="rv">{{edge.functional_block}}</span></div>
-      <div class="row"><span class="rl">Transport Protocol</span><span class="rv">{{edge.transport_protocol}}</span></div>
-      <div class="row"><span class="rl">Exchange Nature</span>   <span class="rv">{{edge.exchange_nature}}</span></div>
-      <div class="row"><span class="rl">Frequency</span>         <span class="rv">{{edge.frequency}}</span></div>
-      <div class="row"><span class="rl">Confidentiality</span>   <span class="rv">{{edge.confidentiality}}</span></div>
-      <div class="row"><span class="rl">PD Protection</span>     <span class="rv">{{edge.personal_data_protection}}</span></div>
-      <div class="row"><span class="rl">CIAT</span>              <span class="rv">{{edge.ciat_computed}}</span></div>
-      <div class="row">
+
+      <!-- Information entities — array displayed as chips -->
+      <div class="sl" style="margin-top:6px">INFORMATION ENTITIES</div>
+      <div class="ie-chips" *ngIf="edge.information_entity?.length; else noIe">
+        <span *ngFor="let ie of edge.information_entity" class="ie-chip">{{ie}}</span>
+      </div>
+      <ng-template #noIe><span class="empty-flows">—</span></ng-template>
+
+      <div class="row" style="margin-top:8px">
         <span class="rl">Criticality</span>
         <span class="rv" [style.color]="cs(edge.criticality)">{{edge.criticality}}</span>
       </div>
+      <div class="row"><span class="rl">Functional Block</span>  <span class="rv">{{edge.functional_block ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Transport Protocol</span><span class="rv">{{edge.transport_protocol ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Exchange Nature</span>   <span class="rv">{{edge.exchange_nature ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Frequency</span>         <span class="rv">{{edge.frequency ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Confidentiality</span>   <span class="rv">{{edge.confidentiality ?? '—'}}</span></div>
+      <div class="row"><span class="rl">PD Protection</span>     <span class="rv">{{edge.personal_data_protection ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Integrity</span>         <span class="rv">{{edge.integrity ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Availability</span>      <span class="rv">{{edge.availability ?? '—'}}</span></div>
+      <div class="row"><span class="rl">Traceability</span>      <span class="rv">{{edge.traceability ?? '—'}}</span></div>
 
       <div class="div"></div>
       <div class="sl">ENDPOINTS</div>

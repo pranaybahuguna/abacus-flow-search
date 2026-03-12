@@ -14,11 +14,13 @@ export interface System {
   description: string; owner: string; tags: string[];
   legal_entity?: string;
   major_business_process?: string[];
-  ciat_computed?: string;
   active?: boolean;
   confidentiality?: string;
   data_storage_territory?: string;
   pd_sensitivity_declared?: string;
+  integrity?: string;
+  availability?: string;
+  traceability?: string;
   /** Pre-computed layout position — present only on full-graph responses. */
   layout_x?: number;
   layout_y?: number;
@@ -26,14 +28,18 @@ export interface System {
 
 export interface Flow {
   id: string; source_app: string; sinc_app: string;
-  information_entity: string; business_process: string[];
+  /** Array of data entities carried by this flow. */
+  information_entity: string[];
+  business_process: string[];
   functional_block?: string;
   message_description?: string;
   transport_protocol: string; criticality: Criticality; frequency: string;
   exchange_nature?: string;
-  ciat_computed?: string;
   confidentiality?: string;
   personal_data_protection?: string;
+  integrity?: string;
+  availability?: string;
+  traceability?: string;
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -72,7 +78,7 @@ export interface SimEdge extends Flow {
 
 // ── Impact ────────────────────────────────────────────────────────────────────
 export interface ViaFlow {
-  information_entity: string; criticality: string;
+  information_entity: string | string[]; criticality: string;
   business_process: string[]; flow_id: string;
 }
 
@@ -89,7 +95,7 @@ export interface ImpactSummary {
 
 export interface CriticalPath {
   to_system: string; to_id: string;
-  information_entity: string; process: string; flow_id: string;
+  information_entity: string | string[]; process: string; flow_id: string;
 }
 
 export interface ProcessAtRisk {
