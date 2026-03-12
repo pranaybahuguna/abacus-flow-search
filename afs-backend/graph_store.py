@@ -397,9 +397,10 @@ class GraphStore:
                     q.append((tgt, hops + 1))
                 else:
                     # Add extra via_flow if not already recorded
-                    seen = {(f["information_entity"], f["criticality"])
+                    def _ie_key(ie): return tuple(ie) if isinstance(ie, list) else ie
+                    seen = {(_ie_key(f["information_entity"]), f["criticality"])
                             for f in visited[tgt]["via_flows"]}
-                    if (flow["information_entity"], flow["criticality"]) not in seen:
+                    if (_ie_key(flow["information_entity"]), flow["criticality"]) not in seen:
                         visited[tgt]["via_flows"].append(flow)
 
         return visited
@@ -480,9 +481,10 @@ class GraphStore:
                     }
                     q.append((src, hops + 1))
                 else:
-                    seen = {(f["information_entity"], f["criticality"])
+                    def _ie_key(ie): return tuple(ie) if isinstance(ie, list) else ie
+                    seen = {(_ie_key(f["information_entity"]), f["criticality"])
                             for f in visited[src]["via_flows"]}
-                    if (flow["information_entity"], flow["criticality"]) not in seen:
+                    if (_ie_key(flow["information_entity"]), flow["criticality"]) not in seen:
                         visited[src]["via_flows"].append(flow)
 
         return visited

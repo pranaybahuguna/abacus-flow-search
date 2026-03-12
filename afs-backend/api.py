@@ -499,7 +499,8 @@ def inspector_flow_search(
     #    Score 1.0 for a hit in information_entity, 0.95 for business_process only.
     lexical: list[dict] = []
     for eid, e in node_edges.items():
-        ie = (e.get("information_entity") or "").lower()
+        ie_raw = e.get("information_entity") or []
+        ie = " ".join(ie_raw if isinstance(ie_raw, list) else [str(ie_raw)]).lower()
         bp = " ".join(e.get("business_process") or []).lower()
         if q_lower in ie:
             lexical.append({"flow_id": eid, "score": 1.0})
