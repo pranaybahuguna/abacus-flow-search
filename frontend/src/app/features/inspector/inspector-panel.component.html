@@ -110,8 +110,15 @@
                   <span class="pw-dir" [style.color]="cs(f.criticality)">{{flowDir(f, node.id)}}</span>
                   <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
                   <span class="fg-name">{{ieLabel(f.information_entity)}}</span>
+                  <span class="fg-score"
+                        *ngIf="getScore(f.id) != null"
+                        [style.color]="scoreColor(getScore(f.id)!)">
+                    {{scoreLabel(getScore(f.id)!)}}
+                  </span>
                 </div>
-                <div class="empty-flows" *ngIf="pwFlows.length === 0">no flows found</div>
+                <div class="empty-flows" *ngIf="pwFlows.length === 0">
+                  {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no flows found'}}
+                </div>
               </div>
             </div>
             <div class="div"></div>

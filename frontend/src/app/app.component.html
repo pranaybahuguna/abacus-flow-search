@@ -38,9 +38,10 @@
     <div class="main">
       <ng-container *ngIf="mode()==='graph'">
         <abacus-graph-canvas/>
-        <abacus-inspector-panel *ngIf="selected$ | async"/>
       </ng-container>
       <abacus-dependency-view  *ngIf="mode()==='dependency'"/>
+      <!-- Inspector available in both EXPLORE and DEPENDENCIES modes -->
+      <abacus-inspector-panel *ngIf="selected$ | async"/>
     </div>
   </div>
 

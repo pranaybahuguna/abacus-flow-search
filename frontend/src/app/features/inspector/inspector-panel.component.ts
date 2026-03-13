@@ -234,6 +234,10 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const hasPins     = this.gs.hasPins();
     const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
     const bpFilter    = hasPins ? null : this.gs.contextBp();
+    const pw          = this.pairwiseSys();
+    // When pairwise is active, search is scoped exclusively to the pw-bar panel.
+    // UPSTREAM/DOWNSTREAM groups stay dimmed and are NOT search-filtered.
+    const effectiveMatchIds = pw ? null : matchIds;
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.sinc_app !== nodeId) return false;
@@ -241,12 +245,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         if (hasPins && !pinnedEdges.has(e.id)) return false;
         // In BP/flow context: only show flows whose primary business_process matches.
         if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-        if (matchIds === null) return true;
-        return matchIds.has(e.id);
+        if (effectiveMatchIds === null) return true;
+        return effectiveMatchIds.has(e.id);
       }),
       'source_app', sg,
     );
-    return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
+    // Exclude the pairwise system — its flows are shown exclusively in the pw-bar.
+    if (pw) return groups.filter(g => g.sysId !== pw.sysId);
+    return effectiveMatchIds !== null ? this._sortByScore(groups, effectiveMatchIds) : groups;
   }
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
@@ -254,18 +260,23 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const hasPins     = this.gs.hasPins();
     const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
     const bpFilter    = hasPins ? null : this.gs.contextBp();
+    const pw          = this.pairwiseSys();
+    // When pairwise is active, search is scoped exclusively to the pw-bar panel.
+    const effectiveMatchIds = pw ? null : matchIds;
     const groups = this._groupFlows(
       sg.edges.filter(e => {
         if (e.source_app !== nodeId) return false;
         // In pin mode: only show flows that belong to at least one pinned subgraph
         if (hasPins && !pinnedEdges.has(e.id)) return false;
         if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-        if (matchIds === null) return true;
-        return matchIds.has(e.id);
+        if (effectiveMatchIds === null) return true;
+        return effectiveMatchIds.has(e.id);
       }),
       'sinc_app', sg,
     );
-    return matchIds !== null ? this._sortByScore(groups, matchIds) : groups;
+    // Exclude the pairwise system — its flows are shown exclusively in the pw-bar.
+    if (pw) return groups.filter(g => g.sysId !== pw.sysId);
+    return effectiveMatchIds !== null ? this._sortByScore(groups, effectiveMatchIds) : groups;
   }
 
   /** When a search is active, sort groups by their best-matching flow score (desc),
@@ -358,11 +369,16 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     this.gs.clearPairwiseFocus();
   }
 
-  /** All edges (both directions) between nodeId and the selected pairwise system. */
+  /** All edges (both directions) between nodeId and the selected pairwise system.
+   *  When a search is active, filtered to only the matching flows so results
+   *  appear exclusively inside the pw-bar panel. */
   pairwiseFlows(sg: SubgraphResponse, nodeId: string) {
     const pw = this.pairwiseSys();
     if (!pw) return [];
-    return this._pairwiseFlows(sg, nodeId, pw.sysId);
+    const flows     = this._pairwiseFlows(sg, nodeId, pw.sysId);
+    const matchIds  = this.flowMatchIds();
+    if (matchIds === null) return flows;
+    return flows.filter(f => matchIds.has(f.id));
   }
 
   private _pairwiseFlows(sg: SubgraphResponse, nodeId: string, peerId: string) {
