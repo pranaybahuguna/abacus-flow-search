@@ -141,10 +141,11 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
           .on('start', (ev: any) => {
             this._dragMoved = false;
             if (!ev.active) {
-              // Large graphs: low alpha so dragging one node doesn't heat up
-              // the entire simulation — avoids physics lag during interaction.
-              const alpha = this._nodes.length > 100 ? 0.06 : 0.3;
-              this.sim?.alphaTarget(alpha).restart();
+              // Keep alpha very low during drag for ALL graph sizes:
+              // a high alphaTarget (0.3) heats the whole simulation and makes every
+              // other node fly around while the user is moving one — feels chaotic.
+              // 0.06 keeps the dragged node responsive while neighbours barely shift.
+              this.sim?.alphaTarget(0.06).restart();
             }
             const node = (ev.subject as any)?._node as SimNode | undefined;
             if (node) { node.fx = node.x; node.fy = node.y; }
@@ -156,9 +157,12 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
               // ev.x/ev.y are screen-space with D3's offset applied → invert to sim
               const [mx, my] = this._transform.invert([ev.x, ev.y]);
               node.fx = mx; node.fy = my;
-              // When there is no simulation (pre-laid full graph), update x/y
-              // directly and request a frame — there is no tick loop to do it.
-              if (!this.sim) { node.x = mx; node.y = my; this._scheduleFrame(); }
+              if (!this.sim) { node.x = mx; node.y = my; }
+              // Always schedule a frame directly — the sim-tick drawEvery throttle
+              // caps rendering to 20fps for n=50-80 nodes, which feels jerky during
+              // interactive drag. Calling _scheduleFrame() here gives 60fps drag
+              // regardless of drawEvery. The _raf guard prevents double-scheduling.
+              this._scheduleFrame();
             }
           })
           .on('end', (ev: any) => {
@@ -276,14 +280,21 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // ── Adaptive simulation (entity-specific queries only) ─────────────────
     // Thresholds are generous — BP queries are no longer capped at 80 nodes
     // so graphs with 100–300+ systems must still settle in reasonable time.
-    const alphaDecay = n < 20  ? 0.013
-                     : n < 80  ? 0.022
-                     : n < 200 ? 0.035
-                     :           0.055;
+    //
+    // alphaDecay: higher = cools faster = shorter / less bouncy animation.
+    // Increased from the previous values so the graph reaches a stable layout
+    // quickly and stops jiggling — more "tool", less "physics toy".
+    const alphaDecay = n < 20  ? 0.025   // was 0.013 — small graphs settle instantly
+                     : n < 80  ? 0.035   // was 0.022 — medium graphs settle ~1.5× faster
+                     : n < 200 ? 0.045   // was 0.035
+                     :           0.060;  // was 0.055
+
+    // maxTicks: caps the wall-clock duration of the settling animation.
+    // Halved from previous values — the graph looks "done" much sooner.
     const maxTicks   = n < 20  ? 0
-                     : n < 80  ? 400
-                     : n < 200 ? 250
-                     :           150;
+                     : n < 80  ? 200    // was 400
+                     : n < 200 ? 150    // was 250
+                     :           100;   // was 150
 
     // Repulsion — modestly reduced to avoid small-graph explosions
     const charge     = n < 50  ? -1200
