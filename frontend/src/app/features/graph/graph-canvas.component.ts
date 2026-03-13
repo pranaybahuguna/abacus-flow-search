@@ -278,70 +278,24 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // ── Adaptive simulation (entity-specific queries only) ─────────────────
+    // ── Layout: ALL ticks run synchronously — zero visible animation ──────────
     //
-    // Design goal: graphs should appear in a stable, final layout immediately —
-    // no visible "explosion then converge" animation.  The approach mirrors what
-    // the full-enterprise-graph page does with server-side layout (hasLayout=true):
-    // compute the layout synchronously in pre-ticks, then show the settled result.
+    // Same approach as the full-enterprise-graph page (hasLayout=true):
+    // compute the final layout before the first paint, then show a static result.
     //
-    // Small graphs (n<50): run 200 ticks synchronously — alpha drops to ~0.0001
-    // (below alphaMin=0.001) so the simulation is already done on first paint.
-    // No visible animation at all.  Dragging a node restarts the sim at low alpha.
-    //
-    // Medium graphs (n<80): 40 synchronous pre-ticks + up to 100 animated ticks
-    // (~1.7 s of gentle settling with alphaDecay=0.045).
-    //
-    // Large graphs: same idea but more pre-ticks since Barnes-Hut is still fast.
-
-    // Initial scatter radius — tight start means less kinetic energy to dissipate
-    // (overrides the value computed above in the scatter const — we keep the
-    // scatter const for the node initialiser; update both together if changing).
-    // Note: scatter const was already set above; these charge/link values shadow
-    // the previous section's computation for the actual simulation build below.
-
-    // Repulsion — reduced across the board so nodes don't fly apart aggressively
-    const charge     = n < 50  ? -700
-                     : n < 150 ? -650
-                     :           -400;
-
-    // Link distance — shorter so connected nodes pull into place quickly
-    const linkDist   = n < 20  ? 130
-                     : n < 80  ? 180
-                     :           240;
-
-    // Per-node centering pull — stronger for small graphs to resist escape
-    const centerStr  = n < 20  ? 0.15
-                     : n < 80  ? 0.10
-                     : n < 200 ? 0.06
-                     :           0.03;
-
-    // alphaDecay — how fast the simulation cools.  Higher = shorter animation.
-    const alphaDecay = n < 80  ? 0.045   // ~150 ticks to alphaMin
-                     : n < 200 ? 0.055   // ~120 ticks
-                     :           0.065;  // ~95 ticks
-
-    // maxTicks — hard cap on the animated phase (after pre-ticks).
-    // n<50 uses 0 because pre-ticks already exhaust the alpha budget.
-    const maxTicks   = n < 50  ? 0
-                     : n < 80  ? 100    // ~1.7 s animated settling
-                     : n < 200 ? 100
-                     :           80;
+    // Force parameters — tuned for fast convergence, not physics realism.
+    const charge    = n < 50  ? -700  : n < 150 ? -650  : -400;
+    const linkDist  = n < 20  ? 130   : n < 80  ? 180   : 240;
+    const centerStr = n < 20  ? 0.15  : n < 80  ? 0.10  : n < 200 ? 0.06 : 0.03;
+    // alphaDecay: higher = fewer ticks needed to reach alphaMin (0.001).
+    // n<200: (1-0.05)^120 ≈ 0.0017 → ~120 ticks.  n>=200: ~95 ticks.
+    const alphaDecay = n < 200 ? 0.05 : 0.065;
+    // How many synchronous ticks to run — enough to fully exhaust the alpha budget.
+    // Barnes-Hut O(n log n) per tick: even n=300 nodes × 200 ticks ≈ 1-2 ms.
+    const preTicks  = n < 200 ? 200 : 150;
 
     this._tickCount = 0;
 
-    // preTicks — synchronous ticks computed before the first paint.
-    // For small graphs: 200 ticks brings alpha below alphaMin — no visible
-    // animation, graph appears already settled (same UX as hasLayout=true).
-    // 200 × ~35 nodes at O(n log n) ≈ < 5 ms on any modern machine.
-    const preTicks = n < 50 ? 200 : n < 80 ? 40 : n < 150 ? 30 : 50;
-
-    // ── Run simulation entirely outside Angular zone ──────────────────────
-    // D3 uses d3-timer (internally requestAnimationFrame) for tick events.
-    // Zone.js patches rAF → every simulation tick triggers full Angular CD
-    // across the entire app at 60fps, which is the main source of lag when
-    // many nodes are on screen. Running outside zone eliminates this cost;
-    // canvas drawing is purely imperative and needs no Angular involvement.
     this.zone.runOutsideAngular(() => {
       this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
         .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(linkDist).strength(.38))
@@ -349,30 +303,26 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         .force('center',  d3.forceCenter(W/2, H/2))
         .force('x',       d3.forceX<SimNode>(W/2).strength(centerStr))
         .force('y',       d3.forceY<SimNode>(H/2).strength(centerStr))
-        .force('collide', d3.forceCollide<SimNode>(100))
+        .force('collide', d3.forceCollide<SimNode>(90))
         .alphaDecay(alphaDecay)
         .stop();
 
-      // Pre-tick synchronously (no render) to jump-start layout
+      // Run ALL layout ticks synchronously — no requestAnimationFrame involved,
+      // no visible animation.  The simulation is fully settled before first paint.
       for (let i = 0; i < preTicks; i++) this.sim.tick();
 
-      // After pre-ticks: fit the viewport to the settled node positions.
-      // Always runs now (preTicks >= 40 for all graph sizes).
-      // For small graphs (preTicks=200) the simulation is already exhausted here
-      // so the first paint shows the final layout with no visible animation.
-      if (preTicks > 0) this._fitToViewport();
+      this._fitToViewport();
+      this._scheduleFrame(); // single draw of the settled graph
 
-      // Throttle: only schedule a canvas redraw every Nth tick — reduces draw
-      // calls during simulation with no visible quality loss.
-      const drawEvery = n < 50 ? 1 : n < 200 ? 3 : 5;
+      // Register tick handler for drag-initiated physics.
+      // We do NOT call .restart() here — the graph stays static until the user
+      // drags a node, at which point drag.start calls alphaTarget(0.06).restart().
+      // The tick handler then fires to redraw while physics plays out.
+      const drawEvery = n < 50 ? 1 : n < 200 ? 2 : 4;
       this.sim.on('tick', () => {
         if (++this._tickCount % drawEvery === 0) this._scheduleFrame();
-      }).restart();
-
-      if (maxTicks > 0) {
-        let ticks = 0;
-        this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
-      }
+      });
+      // Intentionally NO .restart() — zero animation on load.
     }); // end runOutsideAngular
   }
 
