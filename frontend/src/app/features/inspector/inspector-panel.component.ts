@@ -283,14 +283,24 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const mode        = this.searchMode();
     const effectiveMatchIds = pw ? null : matchIds; // pairwise: no search scoping on groups
 
+    // If the inspected node ITSELF matches the semantic query (e.g. searching
+    // "data mart system" while looking at DAR APAC which IS a data mart system),
+    // the global /api/search returns the selected node's id in sysMatchIds.
+    // In that case the user is asking about this system's PURPOSE — show all flows
+    // unfiltered rather than zero results (the neighbour filter never fires on the
+    // selected node's own id since source_app/sinc_app are always neighbour ids).
+    const selfMatches = this.sysMatchIds()?.has(nodeId) ?? false;
+
     const baseEdges = sg.edges.filter(e => {
       if (e.sinc_app !== nodeId) return false;
       if (hasPins && !pinnedEdges.has(e.id)) return false;
       if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-      // ~ mode: include edge if flow matches OR if source system name matches semantically
+      // ~ mode: include edge if (a) selected node itself matches the query,
+      //         (b) the flow matches the query, or (c) the source system matches.
       if (mode === 'similar' && effectiveMatchIds !== null) {
+        if (selfMatches) return true;                              // (a)
         const sysMatch = this.sysMatchIds()?.has(e.source_app) ?? false;
-        return effectiveMatchIds.has(e.id) || sysMatch;
+        return effectiveMatchIds.has(e.id) || sysMatch;           // (b) or (c)
       }
       return true;
     });
@@ -318,12 +328,14 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     const mode        = this.searchMode();
     const effectiveMatchIds = pw ? null : matchIds;
 
+    const selfMatchesOut = this.sysMatchIds()?.has(nodeId) ?? false;
+
     const baseEdges = sg.edges.filter(e => {
       if (e.source_app !== nodeId) return false;
       if (hasPins && !pinnedEdges.has(e.id)) return false;
       if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-      // ~ mode: include edge if flow matches OR if target system name matches semantically
       if (mode === 'similar' && effectiveMatchIds !== null) {
+        if (selfMatchesOut) return true;
         const sysMatch = this.sysMatchIds()?.has(e.sinc_app) ?? false;
         return effectiveMatchIds.has(e.id) || sysMatch;
       }
