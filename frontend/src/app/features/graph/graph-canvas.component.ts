@@ -299,6 +299,13 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // Pre-tick synchronously (no render) to jump-start layout
     for (let i = 0; i < preTicks; i++) this.sim.tick();
 
+    // For larger graphs (where preTicks > 0) fit the viewport ONCE right here —
+    // after the synchronous settling phase, before the animation loop starts.
+    // This gives a correct first-paint zoom without ever resetting it again.
+    // Small graphs (preTicks=0) start within scatter=160px of centre so they
+    // are already visible; forceX/Y keeps them there throughout the animation.
+    if (preTicks > 0) this._fitToViewport();
+
     // Throttle: only schedule a canvas redraw every 3rd tick — reduces draw
     // calls by 67% during simulation with no visible quality loss.
     const drawEvery = n < 50 ? 1 : 3;
@@ -310,10 +317,6 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       let ticks = 0;
       this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
     }
-
-    // After the simulation settles (natural alpha decay or forced stop), auto-
-    // fit all nodes into the viewport so no nodes are hidden in the corners
-    this.sim.on('end', () => this._fitToViewport());
   }
 
   // ── Fit all nodes into the current viewport ────────────────────────────────
