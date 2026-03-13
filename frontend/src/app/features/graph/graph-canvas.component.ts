@@ -38,10 +38,11 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   private _transform  = d3.zoomIdentity;
   private _zoom:      d3.ZoomBehavior<HTMLCanvasElement, unknown> | null = null;
   private _raf:       number | null = null;
-  private _edgeFactor = new Map<string, number>();
-  private _dragMoved  = false;
-  private _tickCount  = 0;   // throttle: only redraw every N simulation ticks
-  private destroy     = new Subject<void>();
+  private _edgeFactor     = new Map<string, number>();
+  private _labelWidthCache= new Map<string, number>(); // avoids measureText on every frame
+  private _dragMoved      = false;
+  private _tickCount      = 0;   // throttle: only redraw every N simulation ticks
+  private destroy         = new Subject<void>();
 
   ngAfterViewInit() {
     // Interaction wiring is set up ONCE here, not inside _render.
@@ -73,7 +74,15 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
 
   private _scheduleFrame() {
     if (this._raf) return;
-    this._raf = requestAnimationFrame(() => { this._raf = null; this._drawFrame(); });
+    // Zone.js monkey-patches the global requestAnimationFrame, meaning every rAF
+    // callback — even those queued from outside-zone code — can still execute inside
+    // Angular zone and trigger change detection at 60fps.
+    // Zone.js preserves the original native rAF at __zone_symbol__requestAnimationFrame.
+    // Using it keeps the ENTIRE canvas draw loop completely invisible to Angular CD.
+    // Falls back to the patched version in environments without Zone.js (unit tests etc.)
+    const nativeRaf = (window as any).__zone_symbol__requestAnimationFrame as
+                      (typeof requestAnimationFrame) | undefined;
+    this._raf = (nativeRaf ?? requestAnimationFrame)(() => { this._raf = null; this._drawFrame(); });
   }
 
   // ── Interaction setup (called once) ───────────────────────────────────────
@@ -197,6 +206,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     this.sim?.stop();
     this.sim = null;
     if (this._raf) { cancelAnimationFrame(this._raf); this._raf = null; }
+    this._labelWidthCache.clear(); // edge labels may differ between graphs
 
     const canvas = this.canvasRef.nativeElement;
     const dpr = window.devicePixelRatio || 1;
@@ -646,7 +656,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const lbl = raw.length > 32 ? raw.slice(0, 31) + '…' : raw;
     ctx.font = '9.5px "IBM Plex Mono",monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const tw = ctx.measureText(lbl).width;
+    // measureText is called every frame for every visible edge — cache to avoid
+    // repeated font-metric lookups (font layout can be 0.02–0.05 ms each call).
+    let tw = this._labelWidthCache.get(lbl);
+    if (tw === undefined) { tw = ctx.measureText(lbl).width; this._labelWidthCache.set(lbl, tw); }
     ctx.globalAlpha = op * 0.9;
     ctx.fillStyle = '#030810';
     ctx.fillRect(lx - tw/2 - 5, ly - 7, tw + 10, 14);
