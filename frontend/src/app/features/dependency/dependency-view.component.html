@@ -194,9 +194,16 @@
                 <div class="sc-crit" [style.color]="critColor(topCrit(node))">{{topCrit(node)}}</div>
               </div>
               <div class="sc-name" [style.color]="accent(node.domain)">{{node.name}}</div>
-              <div class="sc-domain">{{node.domain}}</div>
+              <div class="sc-domain">
+                {{node.domain}}
+                <span *ngIf="upSearch().trim() && upFlowMatchCount(node) > 0"
+                      class="sc-flow-match-ct">
+                  ● {{upFlowMatchCount(node)}} flow{{upFlowMatchCount(node) !== 1 ? 's' : ''}} matched
+                </span>
+              </div>
               <div class="sc-flows">
                 <div *ngFor="let f of node.via_flows" class="sc-flow sc-flow-click"
+                     [class.sc-flow-match]="upSearch().trim() && isFlowMatch(f, upSearch(), upMode())"
                      (click)="selectViaFlow(f, node.id); $event.stopPropagation()"
                      title="Inspect this flow">
                   <span class="fc" [style.color]="critColor(f.criticality)">●</span>
@@ -271,9 +278,16 @@
                 <div class="sc-crit" [style.color]="critColor(topCrit(node))">{{topCrit(node)}}</div>
               </div>
               <div class="sc-name" [style.color]="accent(node.domain)">{{node.name}}</div>
-              <div class="sc-domain">{{node.domain}}</div>
+              <div class="sc-domain">
+                {{node.domain}}
+                <span *ngIf="dnSearch().trim() && dnFlowMatchCount(node) > 0"
+                      class="sc-flow-match-ct">
+                  ● {{dnFlowMatchCount(node)}} flow{{dnFlowMatchCount(node) !== 1 ? 's' : ''}} matched
+                </span>
+              </div>
               <div class="sc-flows">
                 <div *ngFor="let f of node.via_flows" class="sc-flow sc-flow-click"
+                     [class.sc-flow-match]="dnSearch().trim() && isFlowMatch(f, dnSearch(), dnMode())"
                      (click)="selectViaFlow(f, node.id); $event.stopPropagation()"
                      title="Inspect this flow">
                   <span class="fc" [style.color]="critColor(f.criticality)">●</span>

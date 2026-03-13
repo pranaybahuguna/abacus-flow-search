@@ -158,8 +158,13 @@ class GraphStore:
     All return plain Python dicts — no networkx objects leak out."""
 
     def __init__(self):
-        if not GRAPH_PATH.exists():
-            print("graph.pkl missing — building now…")
+        stale = (
+            not GRAPH_PATH.exists()
+            or DATA_PATH.stat().st_mtime > GRAPH_PATH.stat().st_mtime
+        )
+        if stale:
+            reason = "missing" if not GRAPH_PATH.exists() else "enterprise_data.json is newer"
+            print(f"graph.pkl {reason} — rebuilding now…")
             self._G = build_graph()
         else:
             with open(GRAPH_PATH, "rb") as f:

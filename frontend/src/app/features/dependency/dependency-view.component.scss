@@ -111,10 +111,19 @@ input::placeholder{color:#80a4c0}
 .sc-match-pct{font-size:8px;font-weight:700;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;margin-left:auto;margin-right:4px;opacity:.92}
 .sc-name{font-size:11px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .core-name{font-size:12px}
-.sc-domain{font-size:8px;color:#b0c6dc;margin-bottom:6px;text-transform:uppercase}
+.sc-domain{font-size:8px;color:#b0c6dc;margin-bottom:6px;text-transform:uppercase;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sc-flow-match-ct{font-size:7px;color:#34d399;font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;text-transform:none;font-weight:600;white-space:nowrap}
 .sc-flows{display:flex;flex-direction:column;gap:3px}
-.sc-flow{font-size:8px;color:#60a5fa;display:flex;align-items:center;gap:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-flow{font-size:8px;color:#60a5fa;display:flex;align-items:center;gap:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:3px;padding:1px 3px;margin:0 -3px;transition:background .12s}
 .fc{font-size:7px;flex-shrink:0}
+/* Flow row highlight when it matches the active search */
+.sc-flow-match{
+  color:#d1fae5 !important;
+  background:rgba(52,211,153,.1);
+  border-left:2px solid #34d399;
+  padding-left:5px;
+  margin-left:-5px;
+}
 
 /* ── Business process dependencies — compact horizontal chip strip ────────── */
 .bp-section{flex-shrink:0;padding:8px 12px;background:#07111f;border:1px solid #1e3050;border-radius:9px}

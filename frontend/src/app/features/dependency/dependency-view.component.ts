@@ -171,44 +171,96 @@ export class DependencyViewComponent {
 
   // ── Search helpers ───────────────────────────────────────────────────────────
 
-  /** Collect all searchable text targets from a node (name + domain + flow entities). */
+  /**
+   * Extracts text strings from a single flow for search/matching.
+   * Includes both information_entity labels AND business_process tags.
+   */
+  private _flowTexts(f: any): string[] {
+    const ie = f.information_entity;
+    const bp = f.business_process;
+    const ieArr = !ie ? [] : (Array.isArray(ie) ? ie : [ie]) as string[];
+    const bpArr = !bp ? [] : (Array.isArray(bp) ? bp : [bp]) as string[];
+    return [...ieArr, ...bpArr];
+  }
+
+  /**
+   * All searchable text for a node:
+   *   [0] system name
+   *   [1] domain
+   *   [2+] every information_entity + business_process label across all via_flows
+   */
   private _nodeTargets(node: FootprintNode): string[] {
-    const entities = node.via_flows.flatMap(f => {
-      const ie = (f as any).information_entity;
-      if (!ie) return [] as string[];
-      return (Array.isArray(ie) ? ie : [ie]) as string[];
-    });
-    return [node.name, node.domain, ...entities];
+    const flowTexts = node.via_flows.flatMap(f => this._flowTexts(f));
+    return [node.name, node.domain, ...flowTexts];
   }
 
   /**
    * Unified score — 0.0 … 1.0.
    *
-   * Exact mode (phrase):
-   *   Name match  → 60 pts.
-   *   Each matching flow-entity label → 10 pts, capped at 40.
-   *   score = min(1, nameHit×0.6 + flowHits×0.1)
+   * Exact mode (phrase search):
+   *   Name match         → 40 pts
+   *   IE-matching flows  → up to 35 pts  (flowIeHits / totalFlows × 0.35)
+   *   BP-matching flows  → up to 25 pts  (flowBpHits / totalFlows × 0.25)
+   *   → pure IE/BP hits still surface the system even if name doesn't match
    *
-   * Similar mode (token):
+   * Similar mode (token search):
    *   score = matchedTokens / totalTokens
-   *   (every query word is looked for independently across name+domain+flows)
+   *   tokens are checked across name + domain + every IE + every BP tag
    */
   private _scoreNode(node: FootprintNode, q: string, mode: 'exact' | 'similar'): number {
     if (!q) return 1;
-    const targets = this._nodeTargets(node);
 
     if (mode === 'exact') {
-      const nameHit  = node.name.toLowerCase().includes(q) ? 1 : 0;
-      // targets[0]=name, [1]=domain, [2+]=flow entities
-      const flowHits = targets.slice(2).filter(t => t.toLowerCase().includes(q)).length;
-      return Math.min(1, nameHit * 0.6 + flowHits * 0.1);
+      const nameHit = node.name.toLowerCase().includes(q) ? 1 : 0;
+      const totalFlows = Math.max(1, node.via_flows.length);
+      const ieHits = node.via_flows.filter(f => {
+        const ie = (f as any).information_entity;
+        const arr = !ie ? [] : (Array.isArray(ie) ? ie : [ie]) as string[];
+        return arr.some(t => t.toLowerCase().includes(q));
+      }).length;
+      const bpHits = node.via_flows.filter(f => {
+        const bp = (f as any).business_process;
+        const arr = !bp ? [] : (Array.isArray(bp) ? bp : [bp]) as string[];
+        return arr.some(t => t.toLowerCase().includes(q));
+      }).length;
+      return Math.min(1, nameHit * 0.4 + (ieHits / totalFlows) * 0.35 + (bpHits / totalFlows) * 0.25);
     } else {
       const tokens   = q.split(/\s+/).filter(t => t.length >= 2);
       if (tokens.length === 0) return 1;
-      const haystack = targets.join(' ').toLowerCase();
+      const haystack = this._nodeTargets(node).join(' ').toLowerCase();
       const matched  = tokens.filter(tok => haystack.includes(tok)).length;
       return matched / tokens.length;
     }
+  }
+
+  /**
+   * Returns true when a specific via_flow matches the current search query.
+   * Used to highlight individual matched flow rows in the template.
+   */
+  isFlowMatch(f: any, query: string, mode: 'exact' | 'similar'): boolean {
+    if (!query) return false;
+    const q = query.trim().toLowerCase();
+    if (!q) return false;
+    const texts = this._flowTexts(f).map(t => t.toLowerCase());
+    if (mode === 'exact') {
+      return texts.some(t => t.includes(q));
+    } else {
+      const tokens = q.split(/\s+/).filter(t => t.length >= 2);
+      return tokens.some(tok => texts.some(t => t.includes(tok)));
+    }
+  }
+
+  /** Count of via_flows that match the search — shown as a badge on the card. */
+  upFlowMatchCount(node: FootprintNode): number {
+    const q = this.upSearch().trim();
+    if (!q) return 0;
+    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.upMode())).length;
+  }
+
+  dnFlowMatchCount(node: FootprintNode): number {
+    const q = this.dnSearch().trim();
+    if (!q) return 0;
+    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
   }
 
   /** Scroll the BP chip strip by a fixed amount. */
