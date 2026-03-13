@@ -144,7 +144,7 @@
             <span class="fs-ct">{{inGroups.length}}</span>
           </div>
           <div class="empty-flows" *ngIf="inGroups.length === 0">
-            {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no upstream'}}
+            {{searching() ? 'searching…' : flowSearch() ? 'no matching flows or systems' : 'no upstream'}}
           </div>
           <div *ngFor="let grp of inGroups; trackBy: trackGroup"
                class="fg" [class.fg-dim]="pairwiseSys() && pairwiseSys()?.sysId !== grp.sysId">

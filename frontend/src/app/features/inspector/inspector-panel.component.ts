@@ -2,7 +2,7 @@
 import { Component, inject, HostBinding, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule }           from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Subject, of, EMPTY }     from 'rxjs';
+import { Subject, of, EMPTY, forkJoin } from 'rxjs';
 import { switchMap, shareReplay, map, tap, catchError,
          debounceTime, takeUntil } from 'rxjs/operators';
 import { GraphService }    from '../../core/services/graph.service';
@@ -23,6 +23,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   flowSearch    = signal('');                       // text in the input
   /** flow_id → similarity score (0–1). null = no active search / show all. */
   flowMatchIds  = signal<Map<string, number> | null>(null);
+  /** system entity_id → similarity score (0–1) from system-name semantic search. */
+  sysMatchIds   = signal<Map<string, number> | null>(null);
   searching     = signal(false);
   /** EX = local exact/keyword search across system name + IE + BP tags.
    *  similar = semantic backend search (existing behaviour). */
@@ -91,6 +93,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         if (sel.kind === 'node') {
           this.flowSearch.set('');
           this.flowMatchIds.set(null);
+          this.sysMatchIds.set(null);
           this.searching.set(false);
           if (!this._restoringBack) {
             this.pairwiseSys.set(null);
@@ -104,6 +107,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         lastId = '';
         this.flowSearch.set('');
         this.flowMatchIds.set(null);
+        this.sysMatchIds.set(null);
         this.searching.set(false);
         this.pairwiseSys.set(null);
         this.gs.clearPairwiseFocus();
@@ -111,36 +115,49 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Debounced semantic search — fires on every non-empty query after 350 ms idle
+    // Debounced semantic search — fires on every non-empty query after 350 ms idle.
+    // Runs TWO parallel calls: flow-level semantic search AND system-name semantic
+    // search so that groups appear when EITHER the system name OR a flow matches.
     this.searchInput$.pipe(
       debounceTime(350),
       switchMap(q => {
         if (!q.trim()) {
           this.searching.set(false);
           this.flowMatchIds.set(null);
+          this.sysMatchIds.set(null);
           return EMPTY;
         }
         const nodeId = this.currentNodeId();
         if (!nodeId) { this.searching.set(false); return EMPTY; }
 
         this.searching.set(true);
-        return this.http.get<{ results: { flow_id: string; score: number }[] }>('/api/inspector/flows', {
-          params: { q, node_id: nodeId },
+        return forkJoin({
+          flows:   this.http.get<{ results: { flow_id: string; score: number }[] }>(
+            '/api/inspector/flows', { params: { q, node_id: nodeId } }),
+          systems: this.http.get<{ candidates: { entity_id: string; score: number }[] }>(
+            '/api/search', { params: { q, entity_type: 'system', top_k: 20 } }),
         }).pipe(
-          tap(res => {
-            const m   = new Map<string, number>();
-            const pw  = this.gs.pairwiseFocusValue;          // non-null when pairwise active
-            res.results.forEach(r => {
-              // When pairwise is active, only include flows between the two systems
+          tap(({ flows, systems }) => {
+            // Flow-level matches (pairwise-scoped if active)
+            const fm  = new Map<string, number>();
+            const pw  = this.gs.pairwiseFocusValue;
+            flows.results.forEach(r => {
               if (pw && !pw.edgeIds.has(r.flow_id)) return;
-              m.set(r.flow_id, r.score);
+              fm.set(r.flow_id, r.score);
             });
-            this.flowMatchIds.set(m);
+            this.flowMatchIds.set(fm);
+
+            // System-name semantic matches (entity_id → score)
+            const sm = new Map<string, number>();
+            systems.candidates.forEach(c => sm.set(c.entity_id, Math.max(0, c.score)));
+            this.sysMatchIds.set(sm);
+
             this.searching.set(false);
           }),
           catchError(() => {
             this.searching.set(false);
             this.flowMatchIds.set(null);
+            this.sysMatchIds.set(null);
             return EMPTY;
           }),
         );
@@ -161,6 +178,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     if (this.searchMode() === 'exact') {
       // Local keyword search — no backend call needed
       this.flowMatchIds.set(null);
+      this.sysMatchIds.set(null);
       this.searching.set(false);
       return;
     }
@@ -175,6 +193,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     if (mode === 'exact') {
       // Clear any pending/completed semantic results
       this.flowMatchIds.set(null);
+      this.sysMatchIds.set(null);
       this.searching.set(false);
       this.searchInput$.next('');
     } else if (q) {
@@ -188,6 +207,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   clearSearch() {
     this.flowSearch.set('');
     this.flowMatchIds.set(null);
+    this.sysMatchIds.set(null);
     this.searching.set(false);
     this.searchInput$.next('');
   }
@@ -267,8 +287,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       if (e.sinc_app !== nodeId) return false;
       if (hasPins && !pinnedEdges.has(e.id)) return false;
       if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-      // ~ mode: filter edges to semantic matches
-      if (mode === 'similar' && effectiveMatchIds !== null) return effectiveMatchIds.has(e.id);
+      // ~ mode: include edge if flow matches OR if source system name matches semantically
+      if (mode === 'similar' && effectiveMatchIds !== null) {
+        const sysMatch = this.sysMatchIds()?.has(e.source_app) ?? false;
+        return effectiveMatchIds.has(e.id) || sysMatch;
+      }
       return true;
     });
     const groups = this._groupFlows(baseEdges, 'source_app', sg);
@@ -299,7 +322,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
       if (e.source_app !== nodeId) return false;
       if (hasPins && !pinnedEdges.has(e.id)) return false;
       if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-      if (mode === 'similar' && effectiveMatchIds !== null) return effectiveMatchIds.has(e.id);
+      // ~ mode: include edge if flow matches OR if target system name matches semantically
+      if (mode === 'similar' && effectiveMatchIds !== null) {
+        const sysMatch = this.sysMatchIds()?.has(e.sinc_app) ?? false;
+        return effectiveMatchIds.has(e.id) || sysMatch;
+      }
       return true;
     });
     const groups = this._groupFlows(baseEdges, 'sinc_app', sg);
@@ -346,12 +373,18 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
     return Math.round(Math.min(1, nameHit * 0.4 + (ieHits / total) * 0.35 + (bpHits / total) * 0.25) * 100);
   }
 
-  /** Top semantic score (0-100) for a group in ~ mode — used as group-level badge. */
-  groupTopScore(grp: { flows: Flow[] }): number | null {
-    const m = this.flowMatchIds();
-    if (m === null || !this.flowSearch().trim()) return null;
-    let max = -1;
-    grp.flows.forEach(f => { const s = m.get(f.id) ?? -1; if (s > max) max = s; });
+  /** Top semantic score (0-100) for a group in ~ mode — used as group-level badge.
+   *  Takes the max of: (a) system-name semantic score, (b) best flow score in the group. */
+  groupTopScore(grp: { sysId: string; flows: Flow[] }): number | null {
+    const m  = this.flowMatchIds();
+    const sm = this.sysMatchIds();
+    if ((m === null && sm === null) || !this.flowSearch().trim()) return null;
+    // Seed with system-level name match score (may be -1 if system wasn't matched)
+    let max = sm?.get(grp.sysId) ?? -1;
+    // Then take the best flow-level score within this group
+    if (m !== null) {
+      grp.flows.forEach(f => { const s = m.get(f.id) ?? -1; if (s > max) max = s; });
+    }
     return max >= 0 ? Math.round(max * 100) : null;
   }
 
