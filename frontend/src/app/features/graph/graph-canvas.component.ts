@@ -205,13 +205,20 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const hasLayout = sg.nodes.length > 0 && sg.nodes[0].layout_x != null;
 
     // ── Nodes & edges ──────────────────────────────────────────────────────
-    const nodes: SimNode[] = sg.nodes.map(n => ({
-      ...n,
-      x: hasLayout ? n.layout_x! : W/2 + (Math.random()-.5)*480,
-      y: hasLayout ? n.layout_y! : H/2 + (Math.random()-.5)*480,
+    // Compute count early — used for scatter radius, link distance, and forces
+    const n = sg.nodes.length;
+
+    // Initial random scatter: tighter for small BP graphs so nodes start near
+    // the viewport centre and the simulation converges without flying outward
+    const scatter = n < 20 ? 160 : n < 80 ? 300 : 440;
+
+    const nodes: SimNode[] = sg.nodes.map(nd => ({
+      ...nd,
+      x: hasLayout ? nd.layout_x! : W/2 + (Math.random()-.5)*scatter,
+      y: hasLayout ? nd.layout_y! : H/2 + (Math.random()-.5)*scatter,
       vx:0, vy:0, fx:null, fy:null,
     }));
-    const byId = new Map(nodes.map(n => [n.id, n]));
+    const byId = new Map(nodes.map(nd => [nd.id, nd]));
     const edges: SimEdge[] = sg.edges
       .map(e => ({ ...e, source: byId.get(e.source_app) as any, target: byId.get(e.sinc_app) as any }))
       .filter(e => e.source && e.target);
@@ -228,10 +235,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     this._edgeFactor.clear();
     edges.forEach(e => {
       const k = `${(e.source as SimNode).id}→${(e.target as SimNode).id}`;
-      const n = pairCount.get(k)!;
-      const i = pairCur.get(k) ?? 0;
+      const cnt = pairCount.get(k)!;
+      const i   = pairCur.get(k) ?? 0;
       pairCur.set(k, i + 1);
-      this._edgeFactor.set(e.id, n === 1 ? 0.16 : (i - (n-1)/2) * 0.22);
+      this._edgeFactor.set(e.id, cnt === 1 ? 0.16 : (i - (cnt-1)/2) * 0.22);
     });
 
     // ── Pre-laid graph: fit to viewport, no simulation ─────────────────────
@@ -244,7 +251,6 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // ── Adaptive simulation (entity-specific queries only) ─────────────────
     // Thresholds are generous — BP queries are no longer capped at 80 nodes
     // so graphs with 100–300+ systems must still settle in reasonable time.
-    const n = nodes.length;
     const alphaDecay = n < 20  ? 0.013
                      : n < 80  ? 0.022
                      : n < 200 ? 0.035
@@ -253,10 +259,26 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
                      : n < 80  ? 400
                      : n < 200 ? 250
                      :           150;
-    // Repulsion: weaker for very large graphs so they don't explode outward
-    const charge     = n < 50  ? -1600
-                     : n < 150 ? -900
-                     :           -500;
+
+    // Repulsion — modestly reduced to avoid small-graph explosions
+    const charge     = n < 50  ? -1200
+                     : n < 150 ? -800
+                     :           -450;
+
+    // Link distance — shorter for small graphs; 270 on a 5-node graph
+    // spreads nodes across the entire canvas and triggers escape trajectories
+    const linkDist   = n < 20  ? 160
+                     : n < 80  ? 220
+                     :           270;
+
+    // Per-node centering pull via forceX/Y — unlike forceCenter (which moves
+    // the whole cluster), these apply individual springs toward W/2, H/2 so
+    // nodes cannot escape to extreme corners even under strong charge forces.
+    // Strength is higher for small graphs that escape most easily.
+    const centerStr  = n < 20  ? 0.12
+                     : n < 80  ? 0.08
+                     : n < 200 ? 0.05
+                     :           0.03;
 
     this._tickCount = 0;
 
@@ -265,10 +287,12 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     const preTicks = n < 50 ? 0 : n < 150 ? 20 : 40;
 
     this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
-      .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(270).strength(.38))
+      .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(linkDist).strength(.38))
       .force('charge',  d3.forceManyBody<SimNode>().strength(charge))
       .force('center',  d3.forceCenter(W/2, H/2))
-      .force('collide', d3.forceCollide<SimNode>(115))
+      .force('x',       d3.forceX<SimNode>(W/2).strength(centerStr))
+      .force('y',       d3.forceY<SimNode>(H/2).strength(centerStr))
+      .force('collide', d3.forceCollide<SimNode>(100))
       .alphaDecay(alphaDecay)
       .stop();
 
@@ -286,6 +310,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       let ticks = 0;
       this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
     }
+
+    // After the simulation settles (natural alpha decay or forced stop), auto-
+    // fit all nodes into the viewport so no nodes are hidden in the corners
+    this.sim.on('end', () => this._fitToViewport());
   }
 
   // ── Fit all nodes into the current viewport ────────────────────────────────
