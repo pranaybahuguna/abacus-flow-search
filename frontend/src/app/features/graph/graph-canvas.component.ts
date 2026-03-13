@@ -2,7 +2,7 @@
 // Replaces the SVG renderer with a Canvas 2D context.
 // D3 force simulation is unchanged; only the drawing pipeline differs.
 // Canvas can handle 10 000+ nodes at 60 fps where SVG stalls at ~500.
-import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, inject } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnDestroy, AfterViewInit, inject, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as d3          from 'd3';
 import { Subject, takeUntil } from 'rxjs';
@@ -23,6 +23,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', {static:true}) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   gs        = inject(GraphService);
+  zone      = inject(NgZone);
   subgraph$ = this.gs.subgraph$;
   selected$ = this.gs.selected$;
   loading$  = this.gs.loading$;
@@ -78,107 +79,116 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
   // ── Interaction setup (called once) ───────────────────────────────────────
 
   private _initInteraction(canvas: HTMLCanvasElement) {
-    const sel = d3.select(canvas);
+    // ── Run ALL D3 event listeners outside Angular zone ────────────────────
+    // D3 zoom, drag, and mousemove fire on every pointer event at 60 fps.
+    // Zone.js patches addEventListener → each event triggers full Angular
+    // change detection even though canvas drawing is purely imperative.
+    // Running outside zone removes this overhead entirely; we call zone.run()
+    // only for the 3 places that actually update Angular state (selections).
+    this.zone.runOutsideAngular(() => {
+      const sel = d3.select(canvas);
 
-    // ── Zoom ────────────────────────────────────────────────────────────────
-    // filter: wheel events always zoom; mousedown only pans when NOT over a node
-    // (so that clicking/dragging a node is handled exclusively by d3.drag below).
-    this._zoom = d3.zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.15, 4])
-      .filter((ev: any) => {
-        if (ev.type === 'wheel') return true;
-        if (ev.type === 'mousedown' || ev.type === 'touchstart') {
-          const ox = ev.offsetX ?? ev.clientX - canvas.getBoundingClientRect().left;
-          const oy = ev.offsetY ?? ev.clientY - canvas.getBoundingClientRect().top;
-          const [mx, my] = this._transform.invert([ox, oy]);
-          return !this._hitNode(mx, my);   // yield to drag when over a node
-        }
-        return !ev.button;
-      })
-      .on('zoom', ev => { this._transform = ev.transform; this._scheduleFrame(); });
-    sel.call(this._zoom);
-
-    // ── Drag (node pinning) ──────────────────────────────────────────────────
-    // CRITICAL coordinate fix:
-    //   D3 drag computes an offset: dx = subject.x - initialPointer.x
-    //   If subject.x is in simulation space but pointer is in element/screen space,
-    //   dx is a garbage value → the node teleports on the very first drag move.
-    //   Fix: return subject with x/y in SCREEN space so dx ≈ 0 (user clicked the
-    //   node center) or a small pixel offset. In drag we invert ev.x/ev.y back to
-    //   simulation space as usual.
-    sel.call(
-      d3.drag<HTMLCanvasElement, unknown>()
-        .subject((ev: any) => {
-          // ev.x/ev.y = element-relative CSS pixels (d3.pointer result)
-          const [mx, my] = this._transform.invert([ev.x, ev.y]);
-          const node = this._hitNode(mx, my);
-          if (!node) return null;
-          // Return screen-space coords so D3 drag's offset is computed correctly.
-          // Carry the SimNode reference on _node for use in start/drag/end.
-          return {
-            _node: node,
-            x: this._transform.applyX(node.x ?? 0),
-            y: this._transform.applyY(node.y ?? 0),
-          };
-        })
-        .on('start', (ev: any) => {
-          this._dragMoved = false;
-          if (!ev.active) {
-            // Large graphs: low alpha so dragging one node doesn't heat up
-            // the entire simulation — avoids physics lag during interaction.
-            const alpha = this._nodes.length > 100 ? 0.06 : 0.3;
-            this.sim?.alphaTarget(alpha).restart();
+      // ── Zoom ──────────────────────────────────────────────────────────────
+      // filter: wheel events always zoom; mousedown only pans when NOT over a node
+      // (so that clicking/dragging a node is handled exclusively by d3.drag below).
+      this._zoom = d3.zoom<HTMLCanvasElement, unknown>()
+        .scaleExtent([0.15, 4])
+        .filter((ev: any) => {
+          if (ev.type === 'wheel') return true;
+          if (ev.type === 'mousedown' || ev.type === 'touchstart') {
+            const ox = ev.offsetX ?? ev.clientX - canvas.getBoundingClientRect().left;
+            const oy = ev.offsetY ?? ev.clientY - canvas.getBoundingClientRect().top;
+            const [mx, my] = this._transform.invert([ox, oy]);
+            return !this._hitNode(mx, my);   // yield to drag when over a node
           }
-          const node = (ev.subject as any)?._node as SimNode | undefined;
-          if (node) { node.fx = node.x; node.fy = node.y; }
+          return !ev.button;
         })
-        .on('drag', (ev: any) => {
-          this._dragMoved = true;
-          const node = (ev.subject as any)?._node as SimNode | undefined;
-          if (node) {
-            // ev.x/ev.y are screen-space with D3's offset applied → invert to sim
+        .on('zoom', ev => { this._transform = ev.transform; this._scheduleFrame(); });
+      sel.call(this._zoom);
+
+      // ── Drag (node pinning) ────────────────────────────────────────────────
+      // CRITICAL coordinate fix:
+      //   D3 drag computes an offset: dx = subject.x - initialPointer.x
+      //   If subject.x is in simulation space but pointer is in element/screen space,
+      //   dx is a garbage value → the node teleports on the very first drag move.
+      //   Fix: return subject with x/y in SCREEN space so dx ≈ 0 (user clicked the
+      //   node center) or a small pixel offset. In drag we invert ev.x/ev.y back to
+      //   simulation space as usual.
+      sel.call(
+        d3.drag<HTMLCanvasElement, unknown>()
+          .subject((ev: any) => {
+            // ev.x/ev.y = element-relative CSS pixels (d3.pointer result)
             const [mx, my] = this._transform.invert([ev.x, ev.y]);
-            node.fx = mx; node.fy = my;
-            // When there is no simulation (pre-laid full graph), update x/y
-            // directly and request a frame — there is no tick loop to do it.
-            if (!this.sim) { node.x = mx; node.y = my; this._scheduleFrame(); }
-          }
-        })
-        .on('end', (ev: any) => {
-          if (!ev.active) this.sim?.alphaTarget(0);
-          const node = (ev.subject as any)?._node as SimNode | undefined;
-          // No movement → treat as a node click
-          if (!this._dragMoved && node) this.gs.selectNode(node);
-          // Always reset so subsequent edge/background clicks aren't blocked
-          this._dragMoved = false;
-        }),
-    );
+            const node = this._hitNode(mx, my);
+            if (!node) return null;
+            // Return screen-space coords so D3 drag's offset is computed correctly.
+            // Carry the SimNode reference on _node for use in start/drag/end.
+            return {
+              _node: node,
+              x: this._transform.applyX(node.x ?? 0),
+              y: this._transform.applyY(node.y ?? 0),
+            };
+          })
+          .on('start', (ev: any) => {
+            this._dragMoved = false;
+            if (!ev.active) {
+              // Large graphs: low alpha so dragging one node doesn't heat up
+              // the entire simulation — avoids physics lag during interaction.
+              const alpha = this._nodes.length > 100 ? 0.06 : 0.3;
+              this.sim?.alphaTarget(alpha).restart();
+            }
+            const node = (ev.subject as any)?._node as SimNode | undefined;
+            if (node) { node.fx = node.x; node.fy = node.y; }
+          })
+          .on('drag', (ev: any) => {
+            this._dragMoved = true;
+            const node = (ev.subject as any)?._node as SimNode | undefined;
+            if (node) {
+              // ev.x/ev.y are screen-space with D3's offset applied → invert to sim
+              const [mx, my] = this._transform.invert([ev.x, ev.y]);
+              node.fx = mx; node.fy = my;
+              // When there is no simulation (pre-laid full graph), update x/y
+              // directly and request a frame — there is no tick loop to do it.
+              if (!this.sim) { node.x = mx; node.y = my; this._scheduleFrame(); }
+            }
+          })
+          .on('end', (ev: any) => {
+            if (!ev.active) this.sim?.alphaTarget(0);
+            const node = (ev.subject as any)?._node as SimNode | undefined;
+            // No movement → treat as a node click (re-enter zone for Angular state)
+            if (!this._dragMoved && node) this.zone.run(() => this.gs.selectNode(node));
+            // Always reset so subsequent edge/background clicks aren't blocked
+            this._dragMoved = false;
+          }),
+      );
 
-    // ── Cursor (pointer hand over nodes / edge labels) ────────────────────
-    sel.on('mousemove.cursor', (ev: MouseEvent) => {
-      const [mx, my] = this._transform.invert([ev.offsetX, ev.offsetY]);
-      canvas.style.cursor =
-        (this._hitNode(mx, my) || this._hitEdge(mx, my)) ? 'pointer' : 'default';
-    });
+      // ── Cursor (pointer hand over nodes / edge labels) ──────────────────
+      sel.on('mousemove.cursor', (ev: MouseEvent) => {
+        const [mx, my] = this._transform.invert([ev.offsetX, ev.offsetY]);
+        canvas.style.cursor =
+          (this._hitNode(mx, my) || this._hitEdge(mx, my)) ? 'pointer' : 'default';
+      });
 
-    // ── Click (edge label or background) ──────────────────────────────────
-    // Node clicks are handled in drag.end above; this handles everything else.
-    sel.on('click.canvas', (ev: MouseEvent) => {
-      // D3 drag suppresses the browser click event after a real drag,
-      // but _dragMoved is a safety net in case it slips through.
-      if (this._dragMoved) return;
-      const [mx, my] = this._transform.invert([ev.offsetX, ev.offsetY]);
-      if (this._hitNode(mx, my)) return;   // drag.end already handled this
-      const e = this._hitEdge(mx, my);
-      if (e) {
-        this.gs.selectEdge({
-          ...e, source: e.source_app, target: e.sinc_app,
-          sourceNode: e.source as SimNode, targetNode: e.target as SimNode,
-        });
-      } else {
-        this.gs.clearSelection();
-      }
-    });
+      // ── Click (edge label or background) ────────────────────────────────
+      // Node clicks are handled in drag.end above; this handles everything else.
+      sel.on('click.canvas', (ev: MouseEvent) => {
+        // D3 drag suppresses the browser click event after a real drag,
+        // but _dragMoved is a safety net in case it slips through.
+        if (this._dragMoved) return;
+        const [mx, my] = this._transform.invert([ev.offsetX, ev.offsetY]);
+        if (this._hitNode(mx, my)) return;   // drag.end already handled this
+        const e = this._hitEdge(mx, my);
+        if (e) {
+          // Re-enter zone only for Angular state updates
+          this.zone.run(() => this.gs.selectEdge({
+            ...e, source: e.source_app, target: e.sinc_app,
+            sourceNode: e.source as SimNode, targetNode: e.target as SimNode,
+          }));
+        } else {
+          this.zone.run(() => this.gs.clearSelection());
+        }
+      });
+    }); // end runOutsideAngular
   }
 
   // ── Build (called on every new subgraph) ──────────────────────────────────
@@ -291,37 +301,45 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // visual loop — the graph is ~70% settled on first paint, far less jumpy.
     const preTicks = n < 50 ? 0 : n < 150 ? 20 : 40;
 
-    this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
-      .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(linkDist).strength(.38))
-      .force('charge',  d3.forceManyBody<SimNode>().strength(charge))
-      .force('center',  d3.forceCenter(W/2, H/2))
-      .force('x',       d3.forceX<SimNode>(W/2).strength(centerStr))
-      .force('y',       d3.forceY<SimNode>(H/2).strength(centerStr))
-      .force('collide', d3.forceCollide<SimNode>(100))
-      .alphaDecay(alphaDecay)
-      .stop();
+    // ── Run simulation entirely outside Angular zone ──────────────────────
+    // D3 uses d3-timer (internally requestAnimationFrame) for tick events.
+    // Zone.js patches rAF → every simulation tick triggers full Angular CD
+    // across the entire app at 60fps, which is the main source of lag when
+    // many nodes are on screen. Running outside zone eliminates this cost;
+    // canvas drawing is purely imperative and needs no Angular involvement.
+    this.zone.runOutsideAngular(() => {
+      this.sim = d3.forceSimulation<SimNode, SimEdge>(nodes)
+        .force('link',    d3.forceLink<SimNode,SimEdge>(edges).id((d:any)=>d.id).distance(linkDist).strength(.38))
+        .force('charge',  d3.forceManyBody<SimNode>().strength(charge))
+        .force('center',  d3.forceCenter(W/2, H/2))
+        .force('x',       d3.forceX<SimNode>(W/2).strength(centerStr))
+        .force('y',       d3.forceY<SimNode>(H/2).strength(centerStr))
+        .force('collide', d3.forceCollide<SimNode>(100))
+        .alphaDecay(alphaDecay)
+        .stop();
 
-    // Pre-tick synchronously (no render) to jump-start layout
-    for (let i = 0; i < preTicks; i++) this.sim.tick();
+      // Pre-tick synchronously (no render) to jump-start layout
+      for (let i = 0; i < preTicks; i++) this.sim.tick();
 
-    // For larger graphs (where preTicks > 0) fit the viewport ONCE right here —
-    // after the synchronous settling phase, before the animation loop starts.
-    // This gives a correct first-paint zoom without ever resetting it again.
-    // Small graphs (preTicks=0) start within scatter=160px of centre so they
-    // are already visible; forceX/Y keeps them there throughout the animation.
-    if (preTicks > 0) this._fitToViewport();
+      // For larger graphs (where preTicks > 0) fit the viewport ONCE right here —
+      // after the synchronous settling phase, before the animation loop starts.
+      // This gives a correct first-paint zoom without ever resetting it again.
+      // Small graphs (preTicks=0) start within scatter=160px of centre so they
+      // are already visible; forceX/Y keeps them there throughout the animation.
+      if (preTicks > 0) this._fitToViewport();
 
-    // Throttle: only schedule a canvas redraw every 3rd tick — reduces draw
-    // calls by 67% during simulation with no visible quality loss.
-    const drawEvery = n < 50 ? 1 : n < 200 ? 3 : 5;
-    this.sim.on('tick', () => {
-      if (++this._tickCount % drawEvery === 0) this._scheduleFrame();
-    }).restart();
+      // Throttle: only schedule a canvas redraw every Nth tick — reduces draw
+      // calls during simulation with no visible quality loss.
+      const drawEvery = n < 50 ? 1 : n < 200 ? 3 : 5;
+      this.sim.on('tick', () => {
+        if (++this._tickCount % drawEvery === 0) this._scheduleFrame();
+      }).restart();
 
-    if (maxTicks > 0) {
-      let ticks = 0;
-      this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
-    }
+      if (maxTicks > 0) {
+        let ticks = 0;
+        this.sim.on('tick.stopper', () => { if (++ticks >= maxTicks) this.sim?.alphaTarget(0).alpha(0); });
+      }
+    }); // end runOutsideAngular
   }
 
   // ── Fit all nodes into the current viewport ────────────────────────────────
