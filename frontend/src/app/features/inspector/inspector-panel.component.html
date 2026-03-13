@@ -74,16 +74,28 @@
       </div>
 
       <div class="fsearch">
-        <div class="fbox">
+        <div class="fbox"
+             [class.fbox-exact]="searchMode()==='exact'"
+             [class.fbox-sim]="searchMode()==='similar' && !!flowSearch().trim()">
           <span class="fi">⌕</span>
           <input class="finput"
                  [value]="flowSearch()"
                  (input)="onSearchInput($any($event.target).value)"
-                 [placeholder]="pairwiseSys() ? 'search flows with ' + pairwiseSys()!.sysName + '…' : 'search flows & processes…'"
+                 [placeholder]="pairwiseSys() ? 'search flows with ' + pairwiseSys()!.sysName + '…'
+                               : searchMode()==='exact' ? 'system, IE or business process…'
+                               : 'semantic flow search…'"
                  autocomplete="off" spellcheck="false"/>
           <span class="fspinner" *ngIf="searching()"></span>
           <button class="fclear" *ngIf="flowSearch() && !searching()"
                   (click)="clearSearch()" title="Clear search">×</button>
+          <div class="fmode">
+            <button class="fmb" [class.active]="searchMode()==='exact'"
+                    (click)="setSearchMode('exact')"
+                    title="Keyword search — system name, information entity, business process">EX</button>
+            <button class="fmb" [class.active]="searchMode()==='similar'"
+                    (click)="setSearchMode('similar')"
+                    title="Semantic similarity search">~</button>
+          </div>
         </div>
       </div>
 
@@ -142,11 +154,18 @@
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
               <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
+              <!-- EX mode: keyword match % on group -->
+              <span *ngIf="searchMode()==='exact' && flowSearch().trim()"
+                    class="fg-match-pct" [style.color]="matchColor(groupScoreEX(grp))">{{groupScoreEX(grp)}}%</span>
+              <!-- ~ mode: top semantic score on group -->
+              <span *ngIf="searchMode()==='similar' && groupTopScore(grp) != null"
+                    class="fg-match-pct" [style.color]="matchColor(groupTopScore(grp)!)">{{groupTopScore(grp)}}%</span>
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
               <span class="fg-pw-hint" *ngIf="pairwiseSys()?.sysId !== grp.sysId">↔</span>
             </div>
             <div class="fg-flows">
               <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"
+                   [class.fg-flow-match]="isFlowMatchEX(f)"
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
@@ -168,7 +187,7 @@
             <span class="fs-ct">{{outGroups.length}}</span>
           </div>
           <div class="empty-flows" *ngIf="outGroups.length === 0">
-            {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no downstream'}}
+            {{searching() ? 'searching…' : flowSearch() ? 'no matching flows or systems' : 'no downstream'}}
           </div>
           <div *ngFor="let grp of outGroups; trackBy: trackGroup"
                class="fg" [class.fg-dim]="pairwiseSys() && pairwiseSys()?.sysId !== grp.sysId">
@@ -178,11 +197,16 @@
               <div class="fd" [style.background]="cs(grp.topCrit)"></div>
               <span class="fp">{{grp.sysName}}</span>
               <span class="fc" [style.color]="cs(grp.topCrit)">{{grp.topCrit}}</span>
+              <span *ngIf="searchMode()==='exact' && flowSearch().trim()"
+                    class="fg-match-pct" [style.color]="matchColor(groupScoreEX(grp))">{{groupScoreEX(grp)}}%</span>
+              <span *ngIf="searchMode()==='similar' && groupTopScore(grp) != null"
+                    class="fg-match-pct" [style.color]="matchColor(groupTopScore(grp)!)">{{groupTopScore(grp)}}%</span>
               <span class="fg-count" *ngIf="grp.flows.length > 1">{{grp.flows.length}} flows</span>
               <span class="fg-pw-hint" *ngIf="pairwiseSys()?.sysId !== grp.sysId">↔</span>
             </div>
             <div class="fg-flows">
               <div *ngFor="let f of grp.flows; trackBy: trackFlow" class="fg-flow"
+                   [class.fg-flow-match]="isFlowMatchEX(f)"
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>

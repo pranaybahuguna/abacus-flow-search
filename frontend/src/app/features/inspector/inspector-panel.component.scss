@@ -86,6 +86,15 @@
 .fsearch{margin-bottom:10px}
 .fbox{display:flex;align-items:center;gap:6px;background:#0d1f38;border:1px solid #3b6ea8;border-radius:7px;padding:7px 10px;min-height:32px;transition:border-color .15s,box-shadow .15s}
 .fbox:focus-within{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.15)}
+/* EX mode — blue tint; ~ mode with active query — purple tint */
+.fbox.fbox-exact{border-color:#3b82f6;background:#0c1d3a}
+.fbox.fbox-sim{border-color:#7c3aed;background:#0d0a1e}
+/* Mode toggle pills */
+.fmode{display:flex;gap:2px;flex-shrink:0;border-left:1px solid #1e3a56;margin-left:2px;padding-left:5px}
+.fmb{background:transparent;border:1px solid transparent;border-radius:3px;color:#4a6070;font-size:7.5px;font-family:'IBM Plex Mono',monospace;cursor:pointer;padding:2px 5px;letter-spacing:.06em;line-height:1.4;transition:all .12s}
+.fmb:not(.active):hover{border-color:#2a4060;color:#6080a0}
+.fmb:first-child.active{border-color:#3b82f6;color:#60a5fa;background:rgba(59,130,246,.12)}
+.fmb:last-child.active{border-color:#7c3aed;color:#c084fc;background:rgba(124,58,237,.12)}
 .fi{font-size:11px;color:#60a5fa;flex-shrink:0;line-height:1}
 .finput{flex:1;background:transparent;border:none;outline:none;font-size:9.5px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
 .finput::placeholder{color:#7aa8c8}
@@ -112,6 +121,11 @@
 .fg-flows{padding:3px 8px 6px 14px;display:flex;flex-direction:column;gap:3px;border-top:1px solid #1a3050}
 .fg-flow{font-size:8px;color:#c4d8ee;display:flex;align-items:center;gap:5px;cursor:pointer;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background .12s,color .12s;min-width:0}
 .fg-flow:hover{background:#1a3050;color:#daeaf8}
+/* Green highlight when this specific flow matched the EX-mode query */
+.fg-flow.fg-flow-match{color:#d1fae5 !important;background:rgba(52,211,153,.08);border-left:2px solid #34d399;padding-left:5px;margin-left:-5px}
+.fg-flow.fg-flow-match:hover{background:rgba(52,211,153,.14)}
+/* Match % badge shown on the system group row */
+.fg-match-pct{font-size:7.5px;font-weight:700;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;flex-shrink:0}
 .fg-dot{font-size:7px;flex-shrink:0}
 .fg-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fg-score{flex-shrink:0;font-size:8.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);margin-left:auto;white-space:nowrap}

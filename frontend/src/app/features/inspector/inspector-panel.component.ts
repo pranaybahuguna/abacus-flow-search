@@ -24,6 +24,9 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   /** flow_id → similarity score (0–1). null = no active search / show all. */
   flowMatchIds  = signal<Map<string, number> | null>(null);
   searching     = signal(false);
+  /** EX = local exact/keyword search across system name + IE + BP tags.
+   *  similar = semantic backend search (existing behaviour). */
+  searchMode    = signal<'exact' | 'similar'>('similar');
   currentNodeId = signal<string>('');
   /** System selected for pairwise (bidirectional) flow view. */
   pairwiseSys   = signal<{ sysId: string; sysName: string } | null>(null);
@@ -148,15 +151,37 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
-  /** Called by the search input on every keystroke — pushes to debounced semantic pipeline. */
+  /** Called by the search input on every keystroke. */
   onSearchInput(v: string) {
     this.flowSearch.set(v);
     if (!v.trim()) {
       this.clearSearch();
       return;
     }
+    if (this.searchMode() === 'exact') {
+      // Local keyword search — no backend call needed
+      this.flowMatchIds.set(null);
+      this.searching.set(false);
+      return;
+    }
     this.searching.set(true); // show spinner immediately while waiting for debounce
     this.searchInput$.next(v);
+  }
+
+  /** Switch EX ↔ ~ mode and re-run the current query in the new mode. */
+  setSearchMode(mode: 'exact' | 'similar') {
+    this.searchMode.set(mode);
+    const q = this.flowSearch().trim();
+    if (mode === 'exact') {
+      // Clear any pending/completed semantic results
+      this.flowMatchIds.set(null);
+      this.searching.set(false);
+      this.searchInput$.next('');
+    } else if (q) {
+      // Re-trigger semantic search with current query
+      this.searching.set(true);
+      this.searchInput$.next(q);
+    }
   }
 
   /** Called by the clear (×) button */
@@ -232,51 +257,116 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   inboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds    = this.flowMatchIds();
     const hasPins     = this.gs.hasPins();
-    const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
+    const pinnedEdges = this.gs.pinnedEdgeIds();
     const bpFilter    = hasPins ? null : this.gs.contextBp();
     const pw          = this.pairwiseSys();
-    // When pairwise is active, search is scoped exclusively to the pw-bar panel.
-    // UPSTREAM/DOWNSTREAM groups stay dimmed and are NOT search-filtered.
-    const effectiveMatchIds = pw ? null : matchIds;
-    const groups = this._groupFlows(
-      sg.edges.filter(e => {
-        if (e.sinc_app !== nodeId) return false;
-        // In pin mode: only show flows that belong to at least one pinned subgraph
-        if (hasPins && !pinnedEdges.has(e.id)) return false;
-        // In BP/flow context: only show flows whose primary business_process matches.
-        if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-        if (effectiveMatchIds === null) return true;
-        return effectiveMatchIds.has(e.id);
-      }),
-      'source_app', sg,
-    );
-    // Exclude the pairwise system — its flows are shown exclusively in the pw-bar.
+    const mode        = this.searchMode();
+    const effectiveMatchIds = pw ? null : matchIds; // pairwise: no search scoping on groups
+
+    const baseEdges = sg.edges.filter(e => {
+      if (e.sinc_app !== nodeId) return false;
+      if (hasPins && !pinnedEdges.has(e.id)) return false;
+      if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
+      // ~ mode: filter edges to semantic matches
+      if (mode === 'similar' && effectiveMatchIds !== null) return effectiveMatchIds.has(e.id);
+      return true;
+    });
+    const groups = this._groupFlows(baseEdges, 'source_app', sg);
     if (pw) return groups.filter(g => g.sysId !== pw.sysId);
+
+    // EX mode: filter groups by system name OR flow IE/BP content
+    if (mode === 'exact' && this.flowSearch().trim()) {
+      const q = this.flowSearch().trim().toLowerCase();
+      const filtered = groups.filter(g =>
+        g.sysName.toLowerCase().includes(q) ||
+        g.flows.some(f => this._flowTextsInspector(f).some(t => t.toLowerCase().includes(q)))
+      );
+      return filtered.sort((a, b) => this.groupScoreEX(b) - this.groupScoreEX(a));
+    }
     return effectiveMatchIds !== null ? this._sortByScore(groups, effectiveMatchIds) : groups;
   }
 
   outboundGrouped(sg: SubgraphResponse, nodeId: string) {
     const matchIds    = this.flowMatchIds();
     const hasPins     = this.gs.hasPins();
-    const pinnedEdges = this.gs.pinnedEdgeIds();   // only edges from pinned subgraphs
+    const pinnedEdges = this.gs.pinnedEdgeIds();
     const bpFilter    = hasPins ? null : this.gs.contextBp();
     const pw          = this.pairwiseSys();
-    // When pairwise is active, search is scoped exclusively to the pw-bar panel.
+    const mode        = this.searchMode();
     const effectiveMatchIds = pw ? null : matchIds;
-    const groups = this._groupFlows(
-      sg.edges.filter(e => {
-        if (e.source_app !== nodeId) return false;
-        // In pin mode: only show flows that belong to at least one pinned subgraph
-        if (hasPins && !pinnedEdges.has(e.id)) return false;
-        if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
-        if (effectiveMatchIds === null) return true;
-        return effectiveMatchIds.has(e.id);
-      }),
-      'sinc_app', sg,
-    );
-    // Exclude the pairwise system — its flows are shown exclusively in the pw-bar.
+
+    const baseEdges = sg.edges.filter(e => {
+      if (e.source_app !== nodeId) return false;
+      if (hasPins && !pinnedEdges.has(e.id)) return false;
+      if (bpFilter !== null && !e.business_process.includes(bpFilter)) return false;
+      if (mode === 'similar' && effectiveMatchIds !== null) return effectiveMatchIds.has(e.id);
+      return true;
+    });
+    const groups = this._groupFlows(baseEdges, 'sinc_app', sg);
     if (pw) return groups.filter(g => g.sysId !== pw.sysId);
+
+    if (mode === 'exact' && this.flowSearch().trim()) {
+      const q = this.flowSearch().trim().toLowerCase();
+      const filtered = groups.filter(g =>
+        g.sysName.toLowerCase().includes(q) ||
+        g.flows.some(f => this._flowTextsInspector(f).some(t => t.toLowerCase().includes(q)))
+      );
+      return filtered.sort((a, b) => this.groupScoreEX(b) - this.groupScoreEX(a));
+    }
     return effectiveMatchIds !== null ? this._sortByScore(groups, effectiveMatchIds) : groups;
+  }
+
+  // ── EX-mode helpers (called from template) ──────────────────────────────────
+
+  /** IE + BP labels from a single flow — for EX mode matching. */
+  private _flowTextsInspector(f: Flow): string[] {
+    const ie = (f as any).information_entity;
+    const bp = (f as any).business_process;
+    const ieArr = !ie ? [] : (Array.isArray(ie) ? ie : [ie]) as string[];
+    const bpArr = !bp ? [] : (Array.isArray(bp) ? bp : [bp]) as string[];
+    return [...ieArr, ...bpArr];
+  }
+
+  /** 0-100 match score for a system group in EX mode. */
+  groupScoreEX(grp: { sysName: string; flows: Flow[] }): number {
+    const q = this.flowSearch().trim().toLowerCase();
+    if (!q) return 0;
+    const nameHit  = grp.sysName.toLowerCase().includes(q) ? 1 : 0;
+    const total    = Math.max(1, grp.flows.length);
+    const ieHits   = grp.flows.filter(f => {
+      const ie = (f as any).information_entity;
+      const arr = !ie ? [] : (Array.isArray(ie) ? ie : [ie]) as string[];
+      return arr.some(t => t.toLowerCase().includes(q));
+    }).length;
+    const bpHits   = grp.flows.filter(f => {
+      const bp = (f as any).business_process;
+      const arr = !bp ? [] : (Array.isArray(bp) ? bp : [bp]) as string[];
+      return arr.some(t => t.toLowerCase().includes(q));
+    }).length;
+    return Math.round(Math.min(1, nameHit * 0.4 + (ieHits / total) * 0.35 + (bpHits / total) * 0.25) * 100);
+  }
+
+  /** Top semantic score (0-100) for a group in ~ mode — used as group-level badge. */
+  groupTopScore(grp: { flows: Flow[] }): number | null {
+    const m = this.flowMatchIds();
+    if (m === null || !this.flowSearch().trim()) return null;
+    let max = -1;
+    grp.flows.forEach(f => { const s = m.get(f.id) ?? -1; if (s > max) max = s; });
+    return max >= 0 ? Math.round(max * 100) : null;
+  }
+
+  /** True when a specific flow's IE or BP matches the EX-mode query. */
+  isFlowMatchEX(f: Flow): boolean {
+    if (this.searchMode() !== 'exact' || !this.flowSearch().trim()) return false;
+    const q = this.flowSearch().trim().toLowerCase();
+    return this._flowTextsInspector(f).some(t => t.toLowerCase().includes(q));
+  }
+
+  /** Colour for score badges — consistent with dependency page. */
+  matchColor(pct: number): string {
+    if (pct >= 70) return '#34d399';
+    if (pct >= 40) return '#f59e0b';
+    return '#f87171';
   }
 
   /** When a search is active, sort groups by their best-matching flow score (desc),
