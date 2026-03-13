@@ -123,7 +123,12 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
         })
         .on('start', (ev: any) => {
           this._dragMoved = false;
-          if (!ev.active) this.sim?.alphaTarget(0.3).restart();
+          if (!ev.active) {
+            // Large graphs: low alpha so dragging one node doesn't heat up
+            // the entire simulation — avoids physics lag during interaction.
+            const alpha = this._nodes.length > 100 ? 0.06 : 0.3;
+            this.sim?.alphaTarget(alpha).restart();
+          }
           const node = (ev.subject as any)?._node as SimNode | undefined;
           if (node) { node.fx = node.x; node.fy = node.y; }
         })
@@ -308,7 +313,7 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
 
     // Throttle: only schedule a canvas redraw every 3rd tick — reduces draw
     // calls by 67% during simulation with no visible quality loss.
-    const drawEvery = n < 50 ? 1 : 3;
+    const drawEvery = n < 50 ? 1 : n < 200 ? 3 : 5;
     this.sim.on('tick', () => {
       if (++this._tickCount % drawEvery === 0) this._scheduleFrame();
     }).restart();
@@ -418,8 +423,25 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    for (const e of this._edges) this._drawEdge(ctx, e, sel, hasPins, pinColors, pairwiseFocus);
-    for (const n of this._nodes) this._drawNode(ctx, n, sel, neighborIds, pairwiseFocus);
+    // Viewport culling for the detail draw path (k ≥ 0.35).
+    // Without this, every frame iterates ALL nodes/edges regardless of visibility.
+    // At normal zoom with 400+ nodes, ~90% are off-screen — culling drops
+    // draw calls from O(total) to O(visible), making pan/zoom smooth.
+    const { x0, y0, x1, y1 } = this._viewportBounds(vpW, vpH, 400);
+
+    for (const e of this._edges) {
+      const es = e.source as SimNode, et = e.target as SimNode;
+      if (es.x == null || et.x == null) continue;
+      // Skip if both endpoints are clearly off the same side of the viewport
+      if ((es.x < x0 && et.x < x0) || (es.x > x1 && et.x > x1) ||
+          (es.y! < y0 && et.y! < y0) || (es.y! > y1 && et.y! > y1)) continue;
+      this._drawEdge(ctx, e, sel, hasPins, pinColors, pairwiseFocus);
+    }
+    for (const nd of this._nodes) {
+      if (nd.x == null || nd.y == null) continue;
+      if (nd.x + NW < x0 || nd.x - NW > x1 || nd.y + NH < y0 || nd.y - NH > y1) continue;
+      this._drawNode(ctx, nd, sel, neighborIds, pairwiseFocus);
+    }
   }
 
   // ── Batched overview draws (overview zoom, no selection) ─────────────────
