@@ -81,20 +81,28 @@
           <input class="finput"
                  [value]="flowSearch()"
                  (input)="onSearchInput($any($event.target).value)"
-                 [placeholder]="pairwiseSys() ? 'search flows with ' + pairwiseSys()!.sysName + '…'
-                               : searchMode()==='exact' ? 'system, IE or business process…'
-                               : 'semantic flow search…'"
+                 [placeholder]="searchPlaceholder()"
                  autocomplete="off" spellcheck="false"/>
           <span class="fspinner" *ngIf="searching()"></span>
           <button class="fclear" *ngIf="flowSearch() && !searching()"
                   (click)="clearSearch()" title="Clear search">×</button>
           <div class="fmode">
-            <button class="fmb" [class.active]="searchMode()==='exact'"
+            <button class="fmb fmb-ex" [class.active]="searchMode()==='exact'"
                     (click)="setSearchMode('exact')"
                     title="Keyword search — system name, information entity, business process">EX</button>
-            <button class="fmb" [class.active]="searchMode()==='similar'"
+            <button class="fmb fmb-sim" [class.active]="searchMode()==='similar'"
                     (click)="setSearchMode('similar')"
                     title="Semantic similarity search">~</button>
+            <!-- Search target toggle — visible only in ~ mode -->
+            <ng-container *ngIf="searchMode()==='similar'">
+              <span class="fmode-sep">|</span>
+              <button class="fmb fmb-fl" [class.active]="searchTarget()==='flows'"
+                      (click)="setSearchTarget('flows')" title="Search flows only">FL</button>
+              <button class="fmb fmb-all" [class.active]="searchTarget()==='all'"
+                      (click)="setSearchTarget('all')" title="Search flows + systems">ALL</button>
+              <button class="fmb fmb-sy" [class.active]="searchTarget()==='systems'"
+                      (click)="setSearchTarget('systems')" title="Search systems by name / description">SY</button>
+            </ng-container>
           </div>
         </div>
       </div>

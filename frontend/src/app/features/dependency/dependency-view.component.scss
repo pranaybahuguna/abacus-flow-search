@@ -198,7 +198,7 @@ input::placeholder{color:#80a4c0}
 .cs-clear{background:transparent;border:none;color:#4e6880;cursor:pointer;font-size:9px;padding:0;line-height:1;flex-shrink:0}
 .cs-clear:hover{color:#60a5fa}
 
-/* ── EX / ~ mode toggle pills ─────────────────────────────────────────────── */
+/* ── EX / ~ / SY mode toggle pills ─────────────────────────────────────────── */
 .cs-mode{display:flex;gap:2px;flex-shrink:0;border-left:1px solid #1e3a56;margin-left:3px;padding-left:5px}
 .cs-mb{
   background:transparent;
@@ -215,6 +215,16 @@ input::placeholder{color:#80a4c0}
 }
 .cs-mb:not(.active):hover{border-color:#2a4060;color:#6080a0}
 /* EX active — blue */
-.cs-mb:first-child.active{border-color:#3b82f6;color:#60a5fa;background:rgba(59,130,246,.12)}
-/* ~ active — purple to visually signal "different mode" */
-.cs-mb:last-child.active{border-color:#7c3aed;color:#c084fc;background:rgba(124,58,237,.12)}
+.cs-mb-ex.active{border-color:#3b82f6;color:#60a5fa;background:rgba(59,130,246,.12)}
+/* ~ active — purple */
+.cs-mb-sim.active{border-color:#7c3aed;color:#c084fc;background:rgba(124,58,237,.12)}
+/* SY active — emerald (semantic API search) */
+.cs-mb-sy.active{border-color:#059669;color:#34d399;background:rgba(5,150,105,.12)}
+
+/* Semantic mode — green tint on search box */
+.dep-search-sem{border-color:#059669;background:#061811}
+.dep-search-sem:focus-within{border-color:#34d399;box-shadow:0 0 0 1px rgba(52,211,153,.2)}
+
+/* Spinner for semantic search loading */
+.cs-spinner{width:10px;height:10px;border:1.5px solid #1e4030;border-top-color:#34d399;border-radius:50%;flex-shrink:0;animation:csspin .65s linear infinite}
+@keyframes csspin{to{transform:rotate(360deg)}}

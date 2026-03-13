@@ -90,11 +90,19 @@
 .fbox.fbox-exact{border-color:#3b82f6;background:#0c1d3a}
 .fbox.fbox-sim{border-color:#7c3aed;background:#0d0a1e}
 /* Mode toggle pills */
-.fmode{display:flex;gap:2px;flex-shrink:0;border-left:1px solid #1e3a56;margin-left:2px;padding-left:5px}
+.fmode{display:flex;align-items:center;gap:2px;flex-shrink:0;border-left:1px solid #1e3a56;margin-left:2px;padding-left:5px}
 .fmb{background:transparent;border:1px solid transparent;border-radius:3px;color:#4a6070;font-size:7.5px;font-family:'IBM Plex Mono',monospace;cursor:pointer;padding:2px 5px;letter-spacing:.06em;line-height:1.4;transition:all .12s}
 .fmb:not(.active):hover{border-color:#2a4060;color:#6080a0}
-.fmb:first-child.active{border-color:#3b82f6;color:#60a5fa;background:rgba(59,130,246,.12)}
-.fmb:last-child.active{border-color:#7c3aed;color:#c084fc;background:rgba(124,58,237,.12)}
+/* EX active — blue */
+.fmb-ex.active{border-color:#3b82f6;color:#60a5fa;background:rgba(59,130,246,.12)}
+/* ~ active — purple */
+.fmb-sim.active{border-color:#7c3aed;color:#c084fc;background:rgba(124,58,237,.12)}
+/* Separator between mode pills and target pills */
+.fmode-sep{color:#1e3a56;font-size:8px;padding:0 1px;line-height:1;user-select:none}
+/* Target: FL = sky, ALL = slate, SY = emerald */
+.fmb-fl.active {border-color:#0284c7;color:#38bdf8;background:rgba(2,132,199,.12)}
+.fmb-all.active{border-color:#475569;color:#94a3b8;background:rgba(71,85,105,.12)}
+.fmb-sy.active {border-color:#059669;color:#34d399;background:rgba(5,150,105,.12)}
 .fi{font-size:11px;color:#60a5fa;flex-shrink:0;line-height:1}
 .finput{flex:1;background:transparent;border:none;outline:none;font-size:9.5px;color:#e2ecf8;font-family:'IBM Plex Mono',monospace;min-width:0}
 .finput::placeholder{color:#7aa8c8}

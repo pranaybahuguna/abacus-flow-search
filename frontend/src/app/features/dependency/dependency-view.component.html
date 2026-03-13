@@ -160,24 +160,31 @@
             </div>
             <div class="col-sub">what this depends on</div>
             <div class="dep-search" *ngIf="upstreamList(fp).length > 0"
-                 [class.dep-search-sim]="upMode()==='similar'">
+                 [class.dep-search-sim]="upMode()==='similar'"
+                 [class.dep-search-sem]="upMode()==='semantic'">
               <span class="cs-icon">⌕</span>
-              <input class="cs-input" [ngModel]="upSearch()" (ngModelChange)="upSearch.set($event)"
-                     [placeholder]="upMode()==='exact' ? 'name or flow…' : 'any related word…'"
+              <input class="cs-input" [ngModel]="upSearch()" (ngModelChange)="onUpSearchChange($event)"
+                     [placeholder]="upMode()==='exact' ? 'name or flow…' : upMode()==='similar' ? 'any related word…' : 'system description…'"
                      autocomplete="off" spellcheck="false"/>
-              <button class="cs-clear" *ngIf="upSearch().trim()" (click)="upSearch.set('')">✕</button>
+              <span class="cs-spinner" *ngIf="upSemLoading()"></span>
+              <button class="cs-clear" *ngIf="upSearch().trim() && !upSemLoading()" (click)="clearUpSearch()">✕</button>
               <div class="cs-mode">
-                <button class="cs-mb" [class.active]="upMode()==='exact'"
-                        (click)="upMode.set('exact')" title="Exact phrase match">EX</button>
-                <button class="cs-mb" [class.active]="upMode()==='similar'"
-                        (click)="upMode.set('similar')" title="Token similarity — any word matches">~</button>
+                <button class="cs-mb cs-mb-ex" [class.active]="upMode()==='exact'"
+                        (click)="setUpMode('exact')" title="Exact phrase match">EX</button>
+                <button class="cs-mb cs-mb-sim" [class.active]="upMode()==='similar'"
+                        (click)="setUpMode('similar')" title="Token similarity — any word matches">~</button>
+                <button class="cs-mb cs-mb-sy" [class.active]="upMode()==='semantic'"
+                        (click)="setUpMode('semantic')" title="Semantic system search — by name or description">SY</button>
               </div>
             </div>
 
             <div class="empty-col" *ngIf="filteredUpstreamList(fp).length === 0 && !upSearch().trim()">
               no upstream dependencies
             </div>
-            <div class="empty-col" *ngIf="filteredUpstreamList(fp).length === 0 && upSearch().trim()">
+            <div class="empty-col" *ngIf="upSemLoading() && upMode()==='semantic'">
+              searching semantically…
+            </div>
+            <div class="empty-col" *ngIf="filteredUpstreamList(fp).length === 0 && upSearch().trim() && !upSemLoading()">
               no matches
             </div>
 
@@ -244,24 +251,31 @@
             </div>
             <div class="col-sub">what this feeds into</div>
             <div class="dep-search" *ngIf="downstreamList(fp).length > 0"
-                 [class.dep-search-sim]="dnMode()==='similar'">
+                 [class.dep-search-sim]="dnMode()==='similar'"
+                 [class.dep-search-sem]="dnMode()==='semantic'">
               <span class="cs-icon">⌕</span>
-              <input class="cs-input" [ngModel]="dnSearch()" (ngModelChange)="dnSearch.set($event)"
-                     [placeholder]="dnMode()==='exact' ? 'name or flow…' : 'any related word…'"
+              <input class="cs-input" [ngModel]="dnSearch()" (ngModelChange)="onDnSearchChange($event)"
+                     [placeholder]="dnMode()==='exact' ? 'name or flow…' : dnMode()==='similar' ? 'any related word…' : 'system description…'"
                      autocomplete="off" spellcheck="false"/>
-              <button class="cs-clear" *ngIf="dnSearch().trim()" (click)="dnSearch.set('')">✕</button>
+              <span class="cs-spinner" *ngIf="dnSemLoading()"></span>
+              <button class="cs-clear" *ngIf="dnSearch().trim() && !dnSemLoading()" (click)="clearDnSearch()">✕</button>
               <div class="cs-mode">
-                <button class="cs-mb" [class.active]="dnMode()==='exact'"
-                        (click)="dnMode.set('exact')" title="Exact phrase match">EX</button>
-                <button class="cs-mb" [class.active]="dnMode()==='similar'"
-                        (click)="dnMode.set('similar')" title="Token similarity — any word matches">~</button>
+                <button class="cs-mb cs-mb-ex" [class.active]="dnMode()==='exact'"
+                        (click)="setDnMode('exact')" title="Exact phrase match">EX</button>
+                <button class="cs-mb cs-mb-sim" [class.active]="dnMode()==='similar'"
+                        (click)="setDnMode('similar')" title="Token similarity — any word matches">~</button>
+                <button class="cs-mb cs-mb-sy" [class.active]="dnMode()==='semantic'"
+                        (click)="setDnMode('semantic')" title="Semantic system search — by name or description">SY</button>
               </div>
             </div>
 
             <div class="empty-col" *ngIf="filteredDownstreamList(fp).length === 0 && !dnSearch().trim()">
               no downstream effects
             </div>
-            <div class="empty-col" *ngIf="filteredDownstreamList(fp).length === 0 && dnSearch().trim()">
+            <div class="empty-col" *ngIf="dnSemLoading() && dnMode()==='semantic'">
+              searching semantically…
+            </div>
+            <div class="empty-col" *ngIf="filteredDownstreamList(fp).length === 0 && dnSearch().trim() && !dnSemLoading()">
               no matches
             </div>
 

@@ -1,11 +1,12 @@
 // dependency-view.component.ts
 // Answers: "What does this system/process touch end-to-end?"
 // Shows upstream (what it depends on) AND downstream (what it feeds)
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule }              from '@angular/common';
 import { FormsModule }               from '@angular/forms';
-import { of }                        from 'rxjs';
-import { tap }                       from 'rxjs/operators';
+import { HttpClient }                from '@angular/common/http';
+import { of, Subject, EMPTY }       from 'rxjs';
+import { tap, debounceTime, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { DependencyService }         from '../../core/services/dependency.service';
 import { GraphService }              from '../../core/services/graph.service';
 import {
@@ -42,9 +43,10 @@ const EXAMPLE_GROUPS = [
   templateUrl: './dependency-view.component.html',
   styleUrls:   ['./dependency-view.component.scss'],
 })
-export class DependencyViewComponent {
-  private ds = inject(DependencyService);
-  private gs = inject(GraphService);
+export class DependencyViewComponent implements OnInit, OnDestroy {
+  private ds   = inject(DependencyService);
+  private gs   = inject(GraphService);
+  private http = inject(HttpClient);
 
   query        = signal('');
   maxHops      = signal(3);
@@ -56,14 +58,70 @@ export class DependencyViewComponent {
   upSearch = signal('');
   dnSearch = signal('');
 
-  /** Search mode: exact = substring phrase match, similar = any-token fuzzy match */
-  upMode = signal<'exact'|'similar'>('exact');
-  dnMode = signal<'exact'|'similar'>('exact');
+  /** Search mode: exact = substring phrase match, similar = token fuzzy match, semantic = API semantic search */
+  upMode = signal<'exact'|'similar'|'semantic'>('exact');
+  dnMode = signal<'exact'|'similar'|'semantic'>('exact');
+
+  /** Semantic search: system entity IDs that matched. null = no active semantic search. */
+  upSemIds     = signal<Set<string> | null>(null);
+  dnSemIds     = signal<Set<string> | null>(null);
+  upSemLoading = signal(false);
+  dnSemLoading = signal(false);
+
+  private destroy$       = new Subject<void>();
+  private upSearchTrig$  = new Subject<string>();
+  private dnSearchTrig$  = new Subject<string>();
 
   result$  = this.ds.result$;
   loading$ = this.ds.loading$;
 
   exampleGroups = EXAMPLE_GROUPS;
+
+  ngOnInit() {
+    // Debounced semantic search for upstream
+    this.upSearchTrig$.pipe(
+      debounceTime(350),
+      switchMap(q => {
+        if (!q.trim() || this.upMode() !== 'semantic') {
+          this.upSemIds.set(null); this.upSemLoading.set(false); return EMPTY;
+        }
+        this.upSemLoading.set(true);
+        return this.http.get<{ candidates: { entity_id: string; score: number }[] }>(
+          '/api/search', { params: { q: q.trim(), entity_type: 'system', top_k: 50 } },
+        ).pipe(
+          tap(res => {
+            this.upSemIds.set(new Set(res.candidates.map(c => c.entity_id)));
+            this.upSemLoading.set(false);
+          }),
+          catchError(() => { this.upSemLoading.set(false); this.upSemIds.set(null); return EMPTY; }),
+        );
+      }),
+      takeUntil(this.destroy$),
+    ).subscribe();
+
+    // Debounced semantic search for downstream
+    this.dnSearchTrig$.pipe(
+      debounceTime(350),
+      switchMap(q => {
+        if (!q.trim() || this.dnMode() !== 'semantic') {
+          this.dnSemIds.set(null); this.dnSemLoading.set(false); return EMPTY;
+        }
+        this.dnSemLoading.set(true);
+        return this.http.get<{ candidates: { entity_id: string; score: number }[] }>(
+          '/api/search', { params: { q: q.trim(), entity_type: 'system', top_k: 50 } },
+        ).pipe(
+          tap(res => {
+            this.dnSemIds.set(new Set(res.candidates.map(c => c.entity_id)));
+            this.dnSemLoading.set(false);
+          }),
+          catchError(() => { this.dnSemLoading.set(false); this.dnSemIds.set(null); return EMPTY; }),
+        );
+      }),
+      takeUntil(this.destroy$),
+    ).subscribe();
+  }
+
+  ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
   run(q?: string) {
     const query = q ?? this.query();
@@ -72,6 +130,7 @@ export class DependencyViewComponent {
     this.bpSearch.set('');
     this.upSearch.set('');
     this.dnSearch.set('');
+    this._clearSemantic();
     this.ds.analyse(query, this.maxHops()).subscribe();
   }
 
@@ -80,7 +139,53 @@ export class DependencyViewComponent {
     this.bpSearch.set('');
     this.upSearch.set('');
     this.dnSearch.set('');
+    this._clearSemantic();
     this.ds.analyse(c.name, this.maxHops(), c.entity_id, c.entity_type).subscribe();
+  }
+
+  private _clearSemantic() {
+    this.upSemIds.set(null); this.upSemLoading.set(false);
+    this.dnSemIds.set(null); this.dnSemLoading.set(false);
+  }
+
+  // ── Search input handlers ────────────────────────────────────────────────────
+
+  onUpSearchChange(q: string) {
+    this.upSearch.set(q);
+    if (!q.trim()) { this.upSemIds.set(null); this.upSemLoading.set(false); return; }
+    if (this.upMode() === 'semantic') { this.upSemLoading.set(true); this.upSearchTrig$.next(q); }
+  }
+
+  onDnSearchChange(q: string) {
+    this.dnSearch.set(q);
+    if (!q.trim()) { this.dnSemIds.set(null); this.dnSemLoading.set(false); return; }
+    if (this.dnMode() === 'semantic') { this.dnSemLoading.set(true); this.dnSearchTrig$.next(q); }
+  }
+
+  setUpMode(m: 'exact' | 'similar' | 'semantic') {
+    this.upMode.set(m);
+    this.upSemIds.set(null);
+    const q = this.upSearch().trim();
+    if (m === 'semantic' && q) { this.upSemLoading.set(true); this.upSearchTrig$.next(q); }
+    else { this.upSemLoading.set(false); }
+  }
+
+  setDnMode(m: 'exact' | 'similar' | 'semantic') {
+    this.dnMode.set(m);
+    this.dnSemIds.set(null);
+    const q = this.dnSearch().trim();
+    if (m === 'semantic' && q) { this.dnSemLoading.set(true); this.dnSearchTrig$.next(q); }
+    else { this.dnSemLoading.set(false); }
+  }
+
+  clearUpSearch() {
+    this.upSearch.set(''); this.upSemIds.set(null); this.upSemLoading.set(false);
+    this.upSearchTrig$.next('');
+  }
+
+  clearDnSearch() {
+    this.dnSearch.set(''); this.dnSemIds.set(null); this.dnSemLoading.set(false);
+    this.dnSearchTrig$.next('');
   }
 
   // ── Data helpers ─────────────────────────────────────────────────────────────
@@ -130,6 +235,12 @@ export class DependencyViewComponent {
     const q = this.upSearch().trim().toLowerCase();
     if (!q) return this.upstreamList(fp);
     const mode = this.upMode();
+    if (mode === 'semantic') {
+      if (this.upSemLoading()) return [];          // still fetching — show spinner
+      const ids = this.upSemIds();
+      if (ids === null) return this.upstreamList(fp); // no query yet
+      return this.upstreamList(fp).filter(n => ids.has(n.id));
+    }
     return this.upstreamList(fp)
       .map(n => ({ n, s: this._scoreNode(n, q, mode) }))
       .filter(({ s }) => s > 0)
@@ -141,6 +252,12 @@ export class DependencyViewComponent {
     const q = this.dnSearch().trim().toLowerCase();
     if (!q) return this.downstreamList(fp);
     const mode = this.dnMode();
+    if (mode === 'semantic') {
+      if (this.dnSemLoading()) return [];
+      const ids = this.dnSemIds();
+      if (ids === null) return this.downstreamList(fp);
+      return this.downstreamList(fp).filter(n => ids.has(n.id));
+    }
     return this.downstreamList(fp)
       .map(n => ({ n, s: this._scoreNode(n, q, mode) }))
       .filter(({ s }) => s > 0)
@@ -151,15 +268,15 @@ export class DependencyViewComponent {
   /** Score for an upstream card — 0-100 int, shown as badge in the template. */
   upScorePct(node: FootprintNode): number {
     const q = this.upSearch().trim().toLowerCase();
-    if (!q) return 0;
-    return Math.round(this._scoreNode(node, q, this.upMode()) * 100);
+    if (!q || this.upMode() === 'semantic') return 0;
+    return Math.round(this._scoreNode(node, q, this.upMode() as 'exact' | 'similar') * 100);
   }
 
   /** Score for a downstream card — 0-100 int. */
   dnScorePct(node: FootprintNode): number {
     const q = this.dnSearch().trim().toLowerCase();
-    if (!q) return 0;
-    return Math.round(this._scoreNode(node, q, this.dnMode()) * 100);
+    if (!q || this.dnMode() === 'semantic') return 0;
+    return Math.round(this._scoreNode(node, q, this.dnMode() as 'exact' | 'similar') * 100);
   }
 
   /** Colour for the score badge: green ≥70 · amber ≥40 · red <40 */
@@ -207,7 +324,8 @@ export class DependencyViewComponent {
    *   score = matchedTokens / totalTokens
    *   tokens are checked across name + domain + every IE + every BP tag
    */
-  private _scoreNode(node: FootprintNode, q: string, mode: 'exact' | 'similar'): number {
+  private _scoreNode(node: FootprintNode, q: string, mode: 'exact' | 'similar' | 'semantic'): number {
+    if (mode === 'semantic') return 1; // semantic mode filters externally; score unused
     if (!q) return 1;
 
     if (mode === 'exact') {
@@ -237,8 +355,8 @@ export class DependencyViewComponent {
    * Returns true when a specific via_flow matches the current search query.
    * Used to highlight individual matched flow rows in the template.
    */
-  isFlowMatch(f: any, query: string, mode: 'exact' | 'similar'): boolean {
-    if (!query) return false;
+  isFlowMatch(f: any, query: string, mode: 'exact' | 'similar' | 'semantic'): boolean {
+    if (!query || mode === 'semantic') return false;
     const q = query.trim().toLowerCase();
     if (!q) return false;
     const texts = this._flowTexts(f).map(t => t.toLowerCase());
@@ -250,16 +368,17 @@ export class DependencyViewComponent {
     }
   }
 
-  /** Count of via_flows that match the search — shown as a badge on the card. */
+  /** Count of via_flows that match the search — shown as a badge on the card.
+   *  Returns 0 in semantic mode (system-level filter only, no per-flow highlighting). */
   upFlowMatchCount(node: FootprintNode): number {
     const q = this.upSearch().trim();
-    if (!q) return 0;
+    if (!q || this.upMode() === 'semantic') return 0;
     return node.via_flows.filter(f => this.isFlowMatch(f, q, this.upMode())).length;
   }
 
   dnFlowMatchCount(node: FootprintNode): number {
     const q = this.dnSearch().trim();
-    if (!q) return 0;
+    if (!q || this.dnMode() === 'semantic') return 0;
     return node.via_flows.filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
   }
 
