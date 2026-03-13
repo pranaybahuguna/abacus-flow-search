@@ -237,9 +237,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     // Compute count early — used for scatter radius, link distance, and forces
     const n = sg.nodes.length;
 
-    // Initial random scatter: tighter for small BP graphs so nodes start near
-    // the viewport centre and the simulation converges without flying outward
-    const scatter = n < 20 ? 160 : n < 80 ? 300 : 440;
+    // Initial random scatter: tight start = less kinetic energy = faster settling.
+    // Small graphs now run 200 synchronous pre-ticks so they appear immediately
+    // settled — a tighter start radius keeps those pre-ticks effective.
+    const scatter = n < 20 ? 100 : n < 50 ? 160 : n < 80 ? 260 : 400;
 
     const nodes: SimNode[] = sg.nodes.map(nd => ({
       ...nd,
@@ -278,49 +279,62 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     // ── Adaptive simulation (entity-specific queries only) ─────────────────
-    // Thresholds are generous — BP queries are no longer capped at 80 nodes
-    // so graphs with 100–300+ systems must still settle in reasonable time.
     //
-    // alphaDecay: higher = cools faster = shorter / less bouncy animation.
-    // Increased from the previous values so the graph reaches a stable layout
-    // quickly and stops jiggling — more "tool", less "physics toy".
-    const alphaDecay = n < 20  ? 0.025   // was 0.013 — small graphs settle instantly
-                     : n < 80  ? 0.035   // was 0.022 — medium graphs settle ~1.5× faster
-                     : n < 200 ? 0.045   // was 0.035
-                     :           0.060;  // was 0.055
+    // Design goal: graphs should appear in a stable, final layout immediately —
+    // no visible "explosion then converge" animation.  The approach mirrors what
+    // the full-enterprise-graph page does with server-side layout (hasLayout=true):
+    // compute the layout synchronously in pre-ticks, then show the settled result.
+    //
+    // Small graphs (n<50): run 200 ticks synchronously — alpha drops to ~0.0001
+    // (below alphaMin=0.001) so the simulation is already done on first paint.
+    // No visible animation at all.  Dragging a node restarts the sim at low alpha.
+    //
+    // Medium graphs (n<80): 40 synchronous pre-ticks + up to 100 animated ticks
+    // (~1.7 s of gentle settling with alphaDecay=0.045).
+    //
+    // Large graphs: same idea but more pre-ticks since Barnes-Hut is still fast.
 
-    // maxTicks: caps the wall-clock duration of the settling animation.
-    // Halved from previous values — the graph looks "done" much sooner.
-    const maxTicks   = n < 20  ? 0
-                     : n < 80  ? 200    // was 400
-                     : n < 200 ? 150    // was 250
-                     :           100;   // was 150
+    // Initial scatter radius — tight start means less kinetic energy to dissipate
+    // (overrides the value computed above in the scatter const — we keep the
+    // scatter const for the node initialiser; update both together if changing).
+    // Note: scatter const was already set above; these charge/link values shadow
+    // the previous section's computation for the actual simulation build below.
 
-    // Repulsion — modestly reduced to avoid small-graph explosions
-    const charge     = n < 50  ? -1200
-                     : n < 150 ? -800
-                     :           -450;
+    // Repulsion — reduced across the board so nodes don't fly apart aggressively
+    const charge     = n < 50  ? -700
+                     : n < 150 ? -650
+                     :           -400;
 
-    // Link distance — shorter for small graphs; 270 on a 5-node graph
-    // spreads nodes across the entire canvas and triggers escape trajectories
-    const linkDist   = n < 20  ? 160
-                     : n < 80  ? 220
-                     :           270;
+    // Link distance — shorter so connected nodes pull into place quickly
+    const linkDist   = n < 20  ? 130
+                     : n < 80  ? 180
+                     :           240;
 
-    // Per-node centering pull via forceX/Y — unlike forceCenter (which moves
-    // the whole cluster), these apply individual springs toward W/2, H/2 so
-    // nodes cannot escape to extreme corners even under strong charge forces.
-    // Strength is higher for small graphs that escape most easily.
-    const centerStr  = n < 20  ? 0.12
-                     : n < 80  ? 0.08
-                     : n < 200 ? 0.05
+    // Per-node centering pull — stronger for small graphs to resist escape
+    const centerStr  = n < 20  ? 0.15
+                     : n < 80  ? 0.10
+                     : n < 200 ? 0.06
                      :           0.03;
+
+    // alphaDecay — how fast the simulation cools.  Higher = shorter animation.
+    const alphaDecay = n < 80  ? 0.045   // ~150 ticks to alphaMin
+                     : n < 200 ? 0.055   // ~120 ticks
+                     :           0.065;  // ~95 ticks
+
+    // maxTicks — hard cap on the animated phase (after pre-ticks).
+    // n<50 uses 0 because pre-ticks already exhaust the alpha budget.
+    const maxTicks   = n < 50  ? 0
+                     : n < 80  ? 100    // ~1.7 s animated settling
+                     : n < 200 ? 100
+                     :           80;
 
     this._tickCount = 0;
 
-    // For larger graphs pre-run some ticks synchronously before starting the
-    // visual loop — the graph is ~70% settled on first paint, far less jumpy.
-    const preTicks = n < 50 ? 0 : n < 150 ? 20 : 40;
+    // preTicks — synchronous ticks computed before the first paint.
+    // For small graphs: 200 ticks brings alpha below alphaMin — no visible
+    // animation, graph appears already settled (same UX as hasLayout=true).
+    // 200 × ~35 nodes at O(n log n) ≈ < 5 ms on any modern machine.
+    const preTicks = n < 50 ? 200 : n < 80 ? 40 : n < 150 ? 30 : 50;
 
     // ── Run simulation entirely outside Angular zone ──────────────────────
     // D3 uses d3-timer (internally requestAnimationFrame) for tick events.
@@ -342,11 +356,10 @@ export class GraphCanvasComponent implements AfterViewInit, OnDestroy {
       // Pre-tick synchronously (no render) to jump-start layout
       for (let i = 0; i < preTicks; i++) this.sim.tick();
 
-      // For larger graphs (where preTicks > 0) fit the viewport ONCE right here —
-      // after the synchronous settling phase, before the animation loop starts.
-      // This gives a correct first-paint zoom without ever resetting it again.
-      // Small graphs (preTicks=0) start within scatter=160px of centre so they
-      // are already visible; forceX/Y keeps them there throughout the animation.
+      // After pre-ticks: fit the viewport to the settled node positions.
+      // Always runs now (preTicks >= 40 for all graph sizes).
+      // For small graphs (preTicks=200) the simulation is already exhausted here
+      // so the first paint shows the final layout with no visible animation.
       if (preTicks > 0) this._fitToViewport();
 
       // Throttle: only schedule a canvas redraw every Nth tick — reduces draw
