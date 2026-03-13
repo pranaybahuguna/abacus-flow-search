@@ -129,14 +129,20 @@ export interface FootprintSummary {
   downstream_count: number; total_footprint: number;
 }
 
+export interface AffectedProcess {
+  id: string; name: string; regulatory?: string;
+  systems_involved: string[];
+}
+
 export interface Footprint {
   label: string; regulatory?: string;
-  core:       Array<{ id:string; name:string; domain:string; role?:string }>;
-  upstream:   Record<string, FootprintNode>;
-  downstream: Record<string, FootprintNode>;
-  summary:    FootprintSummary;
-  nodes:      System[];
-  edges:      Flow[];
+  core:               Array<{ id:string; name:string; domain:string; role?:string }>;
+  upstream:           Record<string, FootprintNode>;
+  downstream:         Record<string, FootprintNode>;
+  affected_processes?: AffectedProcess[];
+  summary:            FootprintSummary;
+  nodes:              System[];
+  edges:              Flow[];
 }
 
 export interface DependencyResponse {

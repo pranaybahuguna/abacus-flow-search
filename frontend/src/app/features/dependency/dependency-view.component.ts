@@ -7,7 +7,7 @@ import { FormsModule }               from '@angular/forms';
 import { DependencyService }         from '../../core/services/dependency.service';
 import { GraphService }              from '../../core/services/graph.service';
 import {
-  Footprint, FootprintNode, DependencyResponse,
+  Footprint, FootprintNode, AffectedProcess, DependencyResponse,
   ds, SEVERITY_COLOR,
 } from '../../core/models/models';
 
@@ -83,6 +83,10 @@ export class DependencyViewComponent {
   viewInGraph(fp: Footprint) {
     const coreId = fp.core[0]?.id;
     if (coreId) this.gs.loadSubgraph(coreId, 'system').subscribe(() => this.gs.setMode('graph'));
+  }
+
+  bpList(fp: Footprint): AffectedProcess[] {
+    return fp.affected_processes ?? [];
   }
 
   accent(domain: string) { return ds(domain).accent; }

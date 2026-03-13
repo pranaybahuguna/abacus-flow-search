@@ -96,3 +96,16 @@ input::placeholder{color:#80a4c0}
 .sc-flows{display:flex;flex-direction:column;gap:3px}
 .sc-flow{font-size:8px;color:#60a5fa;display:flex;align-items:center;gap:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fc{font-size:7px;flex-shrink:0}
+
+/* ── Business process dependencies section ──────────────────────────────── */
+.bp-section{margin-top:20px;padding:0 2px}
+.bp-hdr{font-size:7.5px;letter-spacing:.12em;color:#a78bfa;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.bp-icon{font-size:10px}
+.bp-ct{font-size:7px;padding:1px 6px;border-radius:8px;background:#1a1040;border:1px solid #5b3fa0;color:#c4b5fd;letter-spacing:0}
+.bp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.bp-card{background:#0e0b1e;border:1px solid #3a2a6a;border-radius:7px;padding:10px 12px;transition:border-color .15s}
+.bp-card:hover{border-color:#7c3aed}
+.bp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.bp-name{font-size:9px;color:#e2d9f3;font-weight:600;line-height:1.4;flex:1;min-width:0}
+.bp-reg{font-size:7px;color:#a78bfa;flex-shrink:0;white-space:nowrap}
+.bp-sys-ct{font-size:7.5px;color:#7c6eb0}

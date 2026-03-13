@@ -4,7 +4,6 @@ import { CommonModule }              from '@angular/common';
 import { SearchPanelComponent }      from './features/search/search-panel.component';
 import { GraphCanvasComponent }      from './features/graph/graph-canvas.component';
 import { InspectorPanelComponent }   from './features/inspector/inspector-panel.component';
-import { ImpactViewComponent }       from './features/impact/impact-view.component';
 import { DependencyViewComponent }   from './features/dependency/dependency-view.component';
 import { GraphService, AppMode }     from './core/services/graph.service';
 import { NotificationService }       from './core/services/notification.service';
@@ -13,7 +12,7 @@ import { NotificationService }       from './core/services/notification.service'
   selector:    'abacus-root',
   standalone:  true,
   imports: [CommonModule, SearchPanelComponent, GraphCanvasComponent,
-            InspectorPanelComponent, ImpactViewComponent, DependencyViewComponent],
+            InspectorPanelComponent, DependencyViewComponent],
   templateUrl: './app.component.html',
   styleUrls:   ['./app.component.scss'],
 })

@@ -142,6 +142,23 @@ def _flow(e: dict) -> FlowOut:
         traceability=e.get("traceability"),
     )
 
+def _system_bps(sys_id: str) -> list[dict]:
+    """Return business processes the system directly participates in, sorted by name."""
+    bp_ids   = _graph._G.nodes[sys_id].get("business_processes", set()) if _graph._G.has_node(sys_id) else set()
+    bp_index = _graph._G.graph.get("bp_index", {})
+    return sorted(
+        [
+            {
+                "id":               bid,
+                "name":             bp_index[bid]["name"],
+                "regulatory":       bp_index[bid].get("regulatory_relevance", ""),
+                "systems_involved": bp_index[bid].get("systems_involved", []),
+            }
+            for bid in bp_ids if bid in bp_index
+        ],
+        key=lambda b: b["name"],
+    )
+
 def _subgraph_out(sg: dict, max_nodes: int | None = None) -> SubgraphOut:
     """
     Serialise a raw graph dict into a SubgraphOut Pydantic model.
@@ -579,6 +596,7 @@ def get_dependencies(
                               "domain": sys_info.get("domain", ""), "role": "origin"}],
                     "upstream": upstream,
                     "downstream": downstream,
+                    "affected_processes": _system_bps(entity_id),
                     "summary": {
                         "upstream_count": len(upstream),
                         "downstream_count": len(downstream),
@@ -685,6 +703,7 @@ def get_dependencies(
                           "role": "origin"}],
                 "upstream": upstream,
                 "downstream": downstream,
+                "affected_processes": _system_bps(resolved_id),
                 "summary": {
                     "upstream_count": len(upstream),
                     "downstream_count": len(downstream),

@@ -13,7 +13,7 @@ import {
   SubgraphResponse, EntityType, SimNode, SimEdge, Selection, SearchCandidate,
 } from '../models/models';
 
-export type AppMode = 'graph' | 'impact' | 'dependency';
+export type AppMode = 'graph' | 'dependency';
 
 /** Colours assigned to each pinned entity — up to 15 distinct hues */
 export const PIN_COLORS = [

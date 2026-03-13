@@ -27,8 +27,16 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   currentNodeId = signal<string>('');
   /** System selected for pairwise (bidirectional) flow view. */
   pairwiseSys   = signal<{ sysId: string; sysName: string } | null>(null);
-  /** Node that was selected before the user drilled into a flow (enables ← Back). */
-  prevNodeSel   = signal<{ node: SimNode; sg: SubgraphResponse } | null>(null);
+  /** Node that was selected before the user drilled into a flow (enables ← Back).
+   *  Also stores the pairwise state so it can be fully restored on back-nav. */
+  prevNodeSel   = signal<{
+    node: SimNode; sg: SubgraphResponse;
+    pairwiseSys: { sysId: string; sysName: string } | null;
+    pairwiseEdgeIds: Set<string> | null;
+  } | null>(null);
+
+  /** Prevents ngOnInit subscription from clearing pairwise during backToNode(). */
+  private _restoringBack = false;
 
   /**
    * Inspector-specific subgraph: always the selected node's full 1-hop
@@ -81,9 +89,11 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
           this.flowSearch.set('');
           this.flowMatchIds.set(null);
           this.searching.set(false);
-          this.pairwiseSys.set(null);
-          this.gs.clearPairwiseFocus();
-          this.prevNodeSel.set(null);
+          if (!this._restoringBack) {
+            this.pairwiseSys.set(null);
+            this.gs.clearPairwiseFocus();
+            this.prevNodeSel.set(null);
+          }
         }
         lastId = id;
       }
@@ -279,23 +289,38 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   selectFlow(flow: Flow, sg: SubgraphResponse) {
-    // Capture the current node so the user can navigate back with ← Back
+    // Capture node + pairwise state so ← Back can fully restore the view
     const sel = this.gs.selectionValue;
     if (sel?.kind === 'node' && sel.node) {
-      this.prevNodeSel.set({ node: sel.node, sg });
+      this.prevNodeSel.set({
+        node: sel.node,
+        sg,
+        pairwiseSys:     this.pairwiseSys(),
+        pairwiseEdgeIds: this.gs.pairwiseFocusValue?.edgeIds ?? null,
+      });
     }
     const sourceNode = sg.nodes.find(n => n.id === flow.source_app) as SimNode | undefined;
     const targetNode = sg.nodes.find(n => n.id === flow.sinc_app) as SimNode | undefined;
     this.gs.selectEdge({ ...flow, source: flow.source_app, target: flow.sinc_app, sourceNode, targetNode });
   }
 
-  /** Return to the node that was selected before the user clicked into a flow. */
+  /** Return to the node + pairwise state that were active before the user clicked into a flow. */
   backToNode() {
     const prev = this.prevNodeSel();
     if (!prev) return;
+    // Flag prevents ngOnInit subscription from wiping pairwise state during selectNode()
+    this._restoringBack = true;
     this.gs.inspectorSgCache.set(prev.sg);
-    this.gs.selectNode(prev.node);
+    this.gs.selectNode(prev.node);          // subscription fires synchronously → respects flag
+    // Restore pairwise focus after node selection
+    if (prev.pairwiseSys) {
+      this.pairwiseSys.set(prev.pairwiseSys);
+      if (prev.pairwiseEdgeIds) {
+        this.gs.setPairwiseFocus(prev.node.id, prev.pairwiseSys.sysId, prev.pairwiseEdgeIds);
+      }
+    }
     this.prevNodeSel.set(null);
+    this._restoringBack = false;
   }
 
   /** Join information_entity array to a readable string — handles both string and string[]. */
