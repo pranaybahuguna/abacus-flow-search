@@ -68,6 +68,14 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upSemLoading = signal(false);
   dnSemLoading = signal(false);
 
+  /** BP-flows-only filter — when on, cards show only flows tagged with the resolved BP,
+   *  and systems with zero matching flows are hidden from the list. */
+  bpFlowFilter   = signal(false);
+  /** Resolved entity type from the latest analysis result. */
+  currentResType = signal<'system' | 'business_process' | null>(null);
+  /** Resolved BP name — set only when resolved_type === 'business_process'. */
+  currentBpName  = signal<string | null>(null);
+
   private destroy$       = new Subject<void>();
   private upSearchTrig$  = new Subject<string>();
   private dnSearchTrig$  = new Subject<string>();
@@ -78,6 +86,15 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   exampleGroups = EXAMPLE_GROUPS;
 
   ngOnInit() {
+    // Track the resolved entity type + name for the BP-flows-only filter
+    this.ds.result$.pipe(takeUntil(this.destroy$)).subscribe(res => {
+      const ok = res?.resolution === 'RESOLVED';
+      this.currentResType.set(ok ? (res!.resolved_type ?? null) : null);
+      this.currentBpName.set(
+        (ok && res!.resolved_type === 'business_process') ? (res!.resolved_name ?? null) : null,
+      );
+    });
+
     // Debounced semantic search for upstream
     this.upSearchTrig$.pipe(
       debounceTime(350),
@@ -146,7 +163,29 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   private _clearSemantic() {
     this.upSemIds.set(null); this.upSemLoading.set(false);
     this.dnSemIds.set(null); this.dnSemLoading.set(false);
+    this.bpFlowFilter.set(false);
   }
+
+  // ── BP-flow filter helpers ───────────────────────────────────────────────────
+
+  /** Returns the active BP name when the BP-flows-only filter is on, null otherwise. */
+  private _activeBp(): string | null {
+    return (this.bpFlowFilter() && this.currentResType() === 'business_process')
+      ? this.currentBpName() : null;
+  }
+
+  /** The via_flows of `node` filtered to this BP only (or all flows when filter is off). */
+  bpFlows(node: FootprintNode): ViaFlow[] {
+    const bp = this._activeBp();
+    if (!bp) return node.via_flows;
+    return node.via_flows.filter(f =>
+      Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp,
+    );
+  }
+
+  trackViaFlow(_: number, f: ViaFlow): string { return f.flow_id; }
+
+  toggleBpFlowFilter() { this.bpFlowFilter.update(v => !v); }
 
   // ── Search input handlers ────────────────────────────────────────────────────
 
@@ -232,16 +271,24 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   filteredUpstreamList(fp: Footprint): FootprintNode[] {
+    // Step 1: BP filter — hide systems with no flows tagged to this BP
+    const bp = this._activeBp();
+    let base = bp
+      ? this.upstreamList(fp).filter(n => n.via_flows.some(f =>
+          Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp))
+      : this.upstreamList(fp);
+
+    // Step 2: search filter
     const q = this.upSearch().trim().toLowerCase();
-    if (!q) return this.upstreamList(fp);
+    if (!q) return base;
     const mode = this.upMode();
     if (mode === 'semantic') {
-      if (this.upSemLoading()) return [];          // still fetching — show spinner
+      if (this.upSemLoading()) return [];
       const ids = this.upSemIds();
-      if (ids === null) return this.upstreamList(fp); // no query yet
-      return this.upstreamList(fp).filter(n => ids.has(n.id));
+      if (ids === null) return base;
+      return base.filter(n => ids.has(n.id));
     }
-    return this.upstreamList(fp)
+    return base
       .map(n => ({ n, s: this._scoreNode(n, q, mode) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
@@ -249,16 +296,24 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   filteredDownstreamList(fp: Footprint): FootprintNode[] {
+    // Step 1: BP filter
+    const bp = this._activeBp();
+    let base = bp
+      ? this.downstreamList(fp).filter(n => n.via_flows.some(f =>
+          Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp))
+      : this.downstreamList(fp);
+
+    // Step 2: search filter
     const q = this.dnSearch().trim().toLowerCase();
-    if (!q) return this.downstreamList(fp);
+    if (!q) return base;
     const mode = this.dnMode();
     if (mode === 'semantic') {
       if (this.dnSemLoading()) return [];
       const ids = this.dnSemIds();
-      if (ids === null) return this.downstreamList(fp);
-      return this.downstreamList(fp).filter(n => ids.has(n.id));
+      if (ids === null) return base;
+      return base.filter(n => ids.has(n.id));
     }
-    return this.downstreamList(fp)
+    return base
       .map(n => ({ n, s: this._scoreNode(n, q, mode) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
@@ -269,14 +324,17 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upScorePct(node: FootprintNode): number {
     const q = this.upSearch().trim().toLowerCase();
     if (!q || this.upMode() === 'semantic') return 0;
-    return Math.round(this._scoreNode(node, q, this.upMode() as 'exact' | 'similar') * 100);
+    // Score against BP-filtered flows when filter is active
+    const n = this._activeBp() ? { ...node, via_flows: this.bpFlows(node) } : node;
+    return Math.round(this._scoreNode(n, q, this.upMode() as 'exact' | 'similar') * 100);
   }
 
   /** Score for a downstream card — 0-100 int. */
   dnScorePct(node: FootprintNode): number {
     const q = this.dnSearch().trim().toLowerCase();
     if (!q || this.dnMode() === 'semantic') return 0;
-    return Math.round(this._scoreNode(node, q, this.dnMode() as 'exact' | 'similar') * 100);
+    const n = this._activeBp() ? { ...node, via_flows: this.bpFlows(node) } : node;
+    return Math.round(this._scoreNode(n, q, this.dnMode() as 'exact' | 'similar') * 100);
   }
 
   /** Colour for the score badge: green ≥70 · amber ≥40 · red <40 */
@@ -369,17 +427,18 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   /** Count of via_flows that match the search — shown as a badge on the card.
+   *  Uses BP-filtered flows when filter is active.
    *  Returns 0 in semantic mode (system-level filter only, no per-flow highlighting). */
   upFlowMatchCount(node: FootprintNode): number {
     const q = this.upSearch().trim();
     if (!q || this.upMode() === 'semantic') return 0;
-    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.upMode())).length;
+    return this.bpFlows(node).filter(f => this.isFlowMatch(f, q, this.upMode())).length;
   }
 
   dnFlowMatchCount(node: FootprintNode): number {
     const q = this.dnSearch().trim();
     if (!q || this.dnMode() === 'semantic') return 0;
-    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
+    return this.bpFlows(node).filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
   }
 
   /** Scroll the BP chip strip by a fixed amount. */

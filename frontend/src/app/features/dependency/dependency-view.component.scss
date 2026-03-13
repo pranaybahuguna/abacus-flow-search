@@ -62,8 +62,28 @@ input::placeholder{color:#80a4c0}
 .hdr-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0c1626;border:1px solid #2a5070;border-radius:9px;flex-shrink:0}
 .res-type{font-size:7.5px;letter-spacing:.14em;color:#60a5fa;margin-bottom:3px}
 .res-name{font-size:15px;color:#d2e4f6;font-family:'IBM Plex Sans',sans-serif;font-weight:600}
+.hdr-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .btn-graph{padding:6px 12px;border-radius:6px;border:1px solid #2a5070;background:transparent;color:#b0c6dc;font-size:9px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all .15s;flex-shrink:0}
 .btn-graph:hover{border-color:#3b82f6;color:#60a5fa}
+
+/* BP-flows-only toggle button */
+.btn-bp-filter{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:6px;
+  border:1px solid #1e4060;
+  background:transparent;
+  color:#60a5fa;
+  font-size:8.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;
+  cursor:pointer;flex-shrink:0;
+  transition:all .15s;
+}
+.btn-bp-filter:hover:not(.active){border-color:#3b82f6;background:rgba(59,130,246,.06)}
+.btn-bp-filter.active{
+  border-color:#f59e0b;
+  background:rgba(245,158,11,.1);
+  color:#fbbf24;
+}
+.bp-filter-check{font-size:11px;line-height:1}
 
 /* Three-column diagram */
 .diagram{display:flex;gap:14px;align-items:flex-start;min-height:200px;flex-shrink:0}
