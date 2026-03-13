@@ -6,8 +6,7 @@ import { Subject, of, EMPTY }     from 'rxjs';
 import { switchMap, shareReplay, map, tap, catchError,
          debounceTime, takeUntil } from 'rxjs/operators';
 import { GraphService }    from '../../core/services/graph.service';
-import { SubgraphResponse } from '../../core/models/models';
-import { ds, CRIT_STROKE, Flow, SimNode } from '../../core/models/models';
+import { ds, CRIT_STROKE, Flow, SimNode, SubgraphResponse } from '../../core/models/models';
 
 @Component({
   selector:'abacus-inspector-panel', standalone:true, imports:[CommonModule],
@@ -28,6 +27,8 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   currentNodeId = signal<string>('');
   /** System selected for pairwise (bidirectional) flow view. */
   pairwiseSys   = signal<{ sysId: string; sysName: string } | null>(null);
+  /** Node that was selected before the user drilled into a flow (enables ← Back). */
+  prevNodeSel   = signal<{ node: SimNode; sg: SubgraphResponse } | null>(null);
 
   /**
    * Inspector-specific subgraph: always the selected node's full 1-hop
@@ -82,6 +83,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
           this.searching.set(false);
           this.pairwiseSys.set(null);
           this.gs.clearPairwiseFocus();
+          this.prevNodeSel.set(null);
         }
         lastId = id;
       }
@@ -92,6 +94,7 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
         this.searching.set(false);
         this.pairwiseSys.set(null);
         this.gs.clearPairwiseFocus();
+        this.prevNodeSel.set(null);
       }
     });
 
@@ -112,8 +115,13 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
           params: { q, node_id: nodeId },
         }).pipe(
           tap(res => {
-            const m = new Map<string, number>();
-            res.results.forEach(r => m.set(r.flow_id, r.score));
+            const m   = new Map<string, number>();
+            const pw  = this.gs.pairwiseFocusValue;          // non-null when pairwise active
+            res.results.forEach(r => {
+              // When pairwise is active, only include flows between the two systems
+              if (pw && !pw.edgeIds.has(r.flow_id)) return;
+              m.set(r.flow_id, r.score);
+            });
             this.flowMatchIds.set(m);
             this.searching.set(false);
           }),
@@ -271,9 +279,29 @@ export class InspectorPanelComponent implements OnInit, OnDestroy {
   }
 
   selectFlow(flow: Flow, sg: SubgraphResponse) {
+    // Capture the current node so the user can navigate back with ← Back
+    const sel = this.gs.selectionValue;
+    if (sel?.kind === 'node' && sel.node) {
+      this.prevNodeSel.set({ node: sel.node, sg });
+    }
     const sourceNode = sg.nodes.find(n => n.id === flow.source_app) as SimNode | undefined;
     const targetNode = sg.nodes.find(n => n.id === flow.sinc_app) as SimNode | undefined;
     this.gs.selectEdge({ ...flow, source: flow.source_app, target: flow.sinc_app, sourceNode, targetNode });
+  }
+
+  /** Return to the node that was selected before the user clicked into a flow. */
+  backToNode() {
+    const prev = this.prevNodeSel();
+    if (!prev) return;
+    this.gs.inspectorSgCache.set(prev.sg);
+    this.gs.selectNode(prev.node);
+    this.prevNodeSel.set(null);
+  }
+
+  /** Join information_entity array to a readable string — handles both string and string[]. */
+  ieLabel(ie: string | string[] | undefined | null): string {
+    if (!ie) return '—';
+    return Array.isArray(ie) ? (ie.length ? ie.join(' · ') : '—') : ie;
   }
 
   trackGroup(_: number, grp: { sysId: string }): string { return grp.sysId; }

@@ -132,6 +132,36 @@
 .ie-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
 .ie-chip{padding:2px 7px;border-radius:3px;font-size:7.5px;background:#0a1e38;border:1px solid #2a5a8a;color:#80c8ff;white-space:nowrap}
 
+/* ── Back button (flow → node navigation) ──────────────────────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 4px 10px;
+  background: #0a1e38;
+  border: 1px solid #2a5a8a;
+  border-radius: 5px;
+  color: #80c8ff;
+  font-size: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.back-btn:hover { background: #0d2040; border-color: #60a5fa; color: #daeaf8; }
+
+/* ── Pairwise dim — non-selected groups fade to background ──────────────── */
+.fg.fg-dim {
+  opacity: 0.2;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+
 /* ── Edge endpoint cards ────────────────────────────────────────────────── */
 .sys{padding:8px 10px;border-radius:7px;border:1px solid;margin-bottom:4px}
 .sr{font-size:7.5px;letter-spacing:.1em;margin-bottom:4px}

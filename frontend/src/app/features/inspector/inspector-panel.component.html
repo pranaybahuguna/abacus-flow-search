@@ -21,7 +21,7 @@
       }
       @if (sel.kind==='edge' && sel.edge; as edge) {
         <div class="ml" [style.color]="cs(edge.criticality)">{{edge.criticality.toUpperCase()}} FLOW</div>
-        <div class="mn">{{edge.information_entity}}</div>
+        <div class="mn">{{ieLabel(edge.information_entity)}}</div>
         <div class="mid">
           {{edge.sourceNode?.name ?? edge.source_app}} → {{edge.targetNode?.name ?? edge.sinc_app}}
         </div>
@@ -79,7 +79,7 @@
           <input class="finput"
                  [value]="flowSearch()"
                  (input)="onSearchInput($any($event.target).value)"
-                 placeholder="search flows & processes…"
+                 [placeholder]="pairwiseSys() ? 'search flows with ' + pairwiseSys()!.sysName + '…' : 'search flows & processes…'"
                  autocomplete="off" spellcheck="false"/>
           <span class="fspinner" *ngIf="searching()"></span>
           <button class="fclear" *ngIf="flowSearch() && !searching()"
@@ -109,7 +109,7 @@
                      title="Click to highlight this flow in the graph">
                   <span class="pw-dir" [style.color]="cs(f.criticality)">{{flowDir(f, node.id)}}</span>
                   <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                  <span class="fg-name">{{f.information_entity}}</span>
+                  <span class="fg-name">{{ieLabel(f.information_entity)}}</span>
                 </div>
                 <div class="empty-flows" *ngIf="pwFlows.length === 0">no flows found</div>
               </div>
@@ -127,7 +127,8 @@
           <div class="empty-flows" *ngIf="inGroups.length === 0">
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no upstream'}}
           </div>
-          <div *ngFor="let grp of inGroups; trackBy: trackGroup" class="fg">
+          <div *ngFor="let grp of inGroups; trackBy: trackGroup"
+               class="fg" [class.fg-dim]="pairwiseSys() && pairwiseSys()?.sysId !== grp.sysId">
             <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
                  (click)="togglePairwise(grp, sg, node.id); $event.stopPropagation()"
                  title="Click to see all connections between these two systems">
@@ -142,7 +143,7 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                <span class="fg-name">{{f.information_entity}}</span>
+                <span class="fg-name">{{ieLabel(f.information_entity)}}</span>
                 <span class="fg-score"
                       *ngIf="getScore(f.id) != null"
                       [style.color]="scoreColor(getScore(f.id)!)">
@@ -162,7 +163,8 @@
           <div class="empty-flows" *ngIf="outGroups.length === 0">
             {{searching() ? 'searching…' : flowSearch() ? 'no similar flows found' : 'no downstream'}}
           </div>
-          <div *ngFor="let grp of outGroups; trackBy: trackGroup" class="fg">
+          <div *ngFor="let grp of outGroups; trackBy: trackGroup"
+               class="fg" [class.fg-dim]="pairwiseSys() && pairwiseSys()?.sysId !== grp.sysId">
             <div class="fg-row" [class.fg-row-active]="pairwiseSys()?.sysId === grp.sysId"
                  (click)="togglePairwise(grp, sg, node.id); $event.stopPropagation()"
                  title="Click to see all connections between these two systems">
@@ -177,7 +179,7 @@
                    (click)="selectFlow(f, sg); $event.stopPropagation()"
                    title="Click to highlight this flow in the graph">
                 <span class="fg-dot" [style.color]="cs(f.criticality)">●</span>
-                <span class="fg-name">{{f.information_entity}}</span>
+                <span class="fg-name">{{ieLabel(f.information_entity)}}</span>
                 <span class="fg-score"
                       *ngIf="getScore(f.id) != null"
                       [style.color]="scoreColor(getScore(f.id)!)">
@@ -193,6 +195,10 @@
 
     <!-- EDGE detail -->
     @if (sel.kind==='edge' && sel.edge; as edge) {
+      <!-- Back breadcrumb — returns to the node the user came from -->
+      <button class="back-btn" *ngIf="prevNodeSel()" (click)="backToNode()">
+        ← {{prevNodeSel()?.node?.name}}
+      </button>
       <div class="row"><span class="rl">Flow ID</span>           <span class="rv">{{edge.id}}</span></div>
       <div class="row"><span class="rl">Business Process</span>  <span class="rv">{{(edge.business_process || []).join(', ')}}</span></div>
 
