@@ -437,6 +437,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
 
   /** Click a flow in the BP Internal Flows section → open inspector for that flow. */
   inspectFlow(f: Flow) {
+    this.gs.contextBp.set(this.currentBpName());
     this._ensureSubgraph(f.source_app).subscribe(sg => {
       const flow = sg.edges.find(e => e.id === f.id);
       if (!flow) return;
@@ -484,8 +485,10 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Click a system card → open the inspector panel for that system. */
+  /** Click a system card → open the inspector panel for that system.
+   *  Always syncs contextBp so the inspector shows only BP-relevant flows when applicable. */
   selectSystem(sysId: string) {
+    this.gs.contextBp.set(this.currentBpName()); // null for system analyses → clears BP scope
     this.loadingSysId.set(sysId);
     this._ensureSubgraph(sysId).subscribe(sg => {
       const simNode = sg.nodes.find(n => n.id === sysId);
@@ -496,6 +499,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
 
   /** Click a flow bullet inside a system card → open the inspector panel for that flow. */
   selectViaFlow(vf: ViaFlow, sysId: string) {
+    this.gs.contextBp.set(this.currentBpName());
     this._ensureSubgraph(sysId).subscribe(sg => {
       const flow = sg.edges.find(e => e.id === vf.flow_id);
       if (!flow) return;
