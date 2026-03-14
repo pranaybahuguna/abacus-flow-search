@@ -505,6 +505,11 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     el.scrollBy({ left: dir * 240, behavior: 'smooth' });
   }
 
+  /** Scroll the BP Internal Flows card strip. */
+  scrollBfmStrip(el: HTMLElement, dir: number) {
+    el.scrollBy({ left: dir * 300, behavior: 'smooth' });
+  }
+
   /** Colour at slot i (cycles through the BP palette). */
   bpColor(i: number) { return BP_COLORS[i % BP_COLORS.length]; }
 
