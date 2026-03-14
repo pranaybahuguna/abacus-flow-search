@@ -71,7 +71,44 @@ input::placeholder{color:#80a4c0}
 .bfm-hdr{font-size:7px;letter-spacing:.12em;color:#6080a0;margin-bottom:9px;display:flex;align-items:center;gap:7px}
 .bfm-icon{font-size:13px;color:#3b82f6;line-height:1}
 .bfm-name{font-size:7.5px;color:#93c5fd;font-style:italic;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
-.bfm-ct{font-size:7px;padding:1px 6px;border-radius:8px;background:#0d1e30;border:1px solid #2a4060;color:#8ab0d0;letter-spacing:0;margin-left:auto;white-space:nowrap}
+.bfm-ct{font-size:7px;padding:1px 6px;border-radius:8px;background:#0d1e30;border:1px solid #2a4060;color:#8ab0d0;letter-spacing:0;white-space:nowrap;margin-left:auto}
+
+/* BP Internal Flows inline search bar */
+.bfm-search{
+  display:flex;align-items:center;gap:3px;
+  background:#0b1829;border:1px solid #1e3a56;border-radius:5px;
+  padding:2px 4px 2px 6px;flex:1;min-width:0;max-width:260px;
+  transition:border-color .15s;
+}
+.bfm-search:focus-within{border-color:#3b82f6}
+.bfm-search.bfm-search-sim{border-color:#7c3aed}
+.bfm-search.bfm-search-sim:focus-within{border-color:#a855f7}
+.bfm-si{font-size:9px;color:#4070a0;flex-shrink:0}
+.bfm-sinput{
+  flex:1;min-width:0;background:none;border:none;outline:none;
+  font-size:8px;font-family:'IBM Plex Mono',monospace;color:#c9d1d9;
+  padding:0 2px;
+}
+.bfm-sinput::placeholder{color:#3a5070}
+.bfm-sclear{
+  background:none;border:none;cursor:pointer;
+  font-size:7px;color:#4070a0;padding:0 1px;line-height:1;flex-shrink:0;
+  transition:color .1s;
+}
+.bfm-sclear:hover{color:#93c5fd}
+.bfm-smode{display:flex;gap:1px;flex-shrink:0;margin-left:2px}
+.bfm-mb{
+  background:none;border:none;cursor:pointer;border-radius:3px;
+  font-size:7px;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;
+  color:#3a5070;padding:1px 4px;line-height:1.4;
+  transition:color .1s,background .1s;
+}
+.bfm-mb:hover{color:#8ab0d0;background:rgba(255,255,255,.05)}
+.bfm-mb-ex.active{color:#38bdf8;background:rgba(56,189,248,.12)}
+.bfm-mb-sim.active{color:#c084fc;background:rgba(192,132,252,.12)}
+.bfm-flow-match{background:rgba(59,130,246,.08);border-radius:3px}
+.bfm-empty-search{font-size:8px;color:#3a5070;font-style:italic;padding:6px 4px;letter-spacing:.04em;width:100%}
+
 .bfm-grid{display:flex;flex-wrap:wrap;gap:8px}
 .bfm-card{
   background:#0b1526;border:1px solid #1e3a5a;border-radius:7px;

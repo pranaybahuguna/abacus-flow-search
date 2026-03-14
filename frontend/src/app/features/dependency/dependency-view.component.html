@@ -155,12 +155,27 @@
             <span class="bfm-icon">⇄</span>
             BP INTERNAL FLOWS
             <span class="bfm-name">{{currentBpName()}}</span>
+            <!-- search bar -->
+            <div class="bfm-search" [class.bfm-search-sim]="bpFlowMode()==='similar'">
+              <span class="bfm-si">⌕</span>
+              <input class="bfm-sinput" [ngModel]="bpFlowSearch()" (ngModelChange)="bpFlowSearch.set($event)"
+                     [placeholder]="bpFlowMode()==='exact' ? 'system or flow…' : 'any related word…'"
+                     autocomplete="off" spellcheck="false"/>
+              <button class="bfm-sclear" *ngIf="bpFlowSearch().trim()" (click)="bpFlowSearch.set('')">✕</button>
+              <div class="bfm-smode">
+                <button class="bfm-mb bfm-mb-ex" [class.active]="bpFlowMode()==='exact'"
+                        (click)="bpFlowMode.set('exact')" title="Exact phrase match">EX</button>
+                <button class="bfm-mb bfm-mb-sim" [class.active]="bpFlowMode()==='similar'"
+                        (click)="bpFlowMode.set('similar')" title="Token similarity">~</button>
+              </div>
+            </div>
             <span class="bfm-ct">
-              {{bpInternalFlows(fp).length}} connection{{bpInternalFlows(fp).length !== 1 ? 's' : ''}}
+              {{filteredBpInternalFlows(fp).length}}<ng-container *ngIf="bpFlowSearch().trim()">/{{bpInternalFlows(fp).length}}</ng-container>
+              conn{{filteredBpInternalFlows(fp).length !== 1 ? 's' : ''}}
             </span>
           </div>
           <div class="bfm-grid">
-            <div *ngFor="let conn of bpInternalFlows(fp); trackBy: trackBpConn" class="bfm-card">
+            <div *ngFor="let conn of filteredBpInternalFlows(fp); trackBy: trackBpConn" class="bfm-card">
               <div class="bfm-endpoints">
                 <button class="bfm-sys" (click)="selectSystem(conn.sourceId)" title="Inspect {{conn.sourceName}}">
                   {{conn.sourceName}}
@@ -172,6 +187,7 @@
               </div>
               <div class="bfm-flows">
                 <div *ngFor="let f of conn.flows" class="bfm-flow"
+                     [class.bfm-flow-match]="isBpFlowMatch(f, conn)"
                      (click)="inspectFlow(f)" title="Inspect flow">
                   <span class="bfm-dot" [style.color]="critColor(f.criticality)">●</span>
                   <span class="bfm-ie">
@@ -180,6 +196,9 @@
                   <span class="bfm-crit" [style.color]="critColor(f.criticality)">{{f.criticality}}</span>
                 </div>
               </div>
+            </div>
+            <div class="bfm-empty-search" *ngIf="filteredBpInternalFlows(fp).length === 0 && bpFlowSearch().trim()">
+              no matches for "{{bpFlowSearch()}}"
             </div>
           </div>
         </div>

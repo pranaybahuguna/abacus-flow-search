@@ -68,6 +68,10 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upSemLoading = signal(false);
   dnSemLoading = signal(false);
 
+  /** BP Internal Flows search */
+  bpFlowSearch = signal('');
+  bpFlowMode   = signal<'exact' | 'similar'>('exact');
+
   /** Resolved entity type from the latest analysis result. */
   currentResType = signal<'system' | 'business_process' | null>(null);
   /** Resolved BP name — set only when resolved_type === 'business_process'. */
@@ -144,6 +148,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     this.bpSearch.set('');
     this.upSearch.set('');
     this.dnSearch.set('');
+    this.bpFlowSearch.set('');
     this._clearSemantic();
     this.ds.analyse(query, this.maxHops()).subscribe();
   }
@@ -153,6 +158,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     this.bpSearch.set('');
     this.upSearch.set('');
     this.dnSearch.set('');
+    this.bpFlowSearch.set('');
     this._clearSemantic();
     this.ds.analyse(c.name, this.maxHops(), c.entity_id, c.entity_type).subscribe();
   }
@@ -433,7 +439,50 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     return Array.from(map.values());
   }
 
+  /** Filters bpInternalFlows by the BP Internal Flows search query. */
+  filteredBpInternalFlows(fp: Footprint) {
+    const all = this.bpInternalFlows(fp);
+    const q   = this.bpFlowSearch().trim().toLowerCase();
+    if (!q) return all;
+    const mode = this.bpFlowMode();
+    if (mode === 'exact') {
+      return all.filter(conn =>
+        conn.sourceName.toLowerCase().includes(q) ||
+        conn.targetName.toLowerCase().includes(q) ||
+        conn.flows.some(f => f.information_entity.some(ie => ie.toLowerCase().includes(q))),
+      );
+    }
+    // similar: any token matches anywhere in source/target name or IE
+    const tokens = q.split(/\s+/).filter(t => t.length >= 2);
+    if (!tokens.length) return all;
+    return all.filter(conn => {
+      const hay = [
+        conn.sourceName,
+        conn.targetName,
+        ...conn.flows.flatMap(f => f.information_entity),
+      ].join(' ').toLowerCase();
+      return tokens.some(tok => hay.includes(tok));
+    });
+  }
+
   trackBpConn(_: number, c: { sourceId: string; targetId: string }): string { return `${c.sourceId}→${c.targetId}`; }
+
+  /** Returns true when the search query matches this flow row (or its connection's system names).
+   *  Used for highlighting matched rows in the BP Internal Flows section.
+   *  Must be a named method — arrow functions are not allowed in Angular template bindings. */
+  isBpFlowMatch(f: Flow, conn: { sourceName: string; targetName: string }): boolean {
+    const q = this.bpFlowSearch().trim().toLowerCase();
+    if (!q) return false;
+    const mode = this.bpFlowMode();
+    if (mode === 'exact') {
+      return conn.sourceName.toLowerCase().includes(q) ||
+             conn.targetName.toLowerCase().includes(q) ||
+             f.information_entity.some(ie => ie.toLowerCase().includes(q));
+    }
+    const tokens = q.split(/\s+/).filter(t => t.length >= 2);
+    const hay = [conn.sourceName, conn.targetName, ...f.information_entity].join(' ').toLowerCase();
+    return tokens.some(tok => hay.includes(tok));
+  }
 
   /** Click a flow in the BP Internal Flows section → open inspector for that flow. */
   inspectFlow(f: Flow) {
