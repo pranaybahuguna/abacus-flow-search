@@ -107,18 +107,7 @@
             <div class="res-type">{{res.resolved_type?.replace('_',' ')?.toUpperCase()}}</div>
             <div class="res-name">{{res.resolved_name}}</div>
           </div>
-          <div class="hdr-actions">
-            <!-- BP-flows-only toggle — visible only when result is a business process -->
-            <button *ngIf="currentResType()==='business_process'"
-                    class="btn-bp-filter"
-                    [class.active]="bpFlowFilter()"
-                    (click)="toggleBpFlowFilter()"
-                    title="Show only flows and systems directly involved in this business process">
-              <span class="bp-filter-check">{{bpFlowFilter() ? '☑' : '☐'}}</span>
-              BP FLOWS ONLY
-            </button>
-            <button class="btn-graph" (click)="viewInGraph(fp)">◈ VIEW IN GRAPH</button>
-          </div>
+          <button class="btn-graph" (click)="viewInGraph(fp)">◈ VIEW IN GRAPH</button>
         </div>
 
         <!-- ── BUSINESS PROCESS DEPENDENCIES — compact horizontal strip ─── -->
@@ -159,6 +148,42 @@
           </div>
         </div>
 
+        <!-- ── BP INTERNAL FLOWS — direct flows between BP-participating systems ── -->
+        <div class="bp-flow-map"
+             *ngIf="currentResType() === 'business_process' && bpInternalFlows(fp).length > 0">
+          <div class="bfm-hdr">
+            <span class="bfm-icon">⇄</span>
+            BP INTERNAL FLOWS
+            <span class="bfm-name">{{currentBpName()}}</span>
+            <span class="bfm-ct">
+              {{bpInternalFlows(fp).length}} connection{{bpInternalFlows(fp).length !== 1 ? 's' : ''}}
+            </span>
+          </div>
+          <div class="bfm-grid">
+            <div *ngFor="let conn of bpInternalFlows(fp); trackBy: trackBpConn" class="bfm-card">
+              <div class="bfm-endpoints">
+                <button class="bfm-sys" (click)="selectSystem(conn.sourceId)" title="Inspect {{conn.sourceName}}">
+                  {{conn.sourceName}}
+                </button>
+                <span class="bfm-arrow">→</span>
+                <button class="bfm-sys" (click)="selectSystem(conn.targetId)" title="Inspect {{conn.targetName}}">
+                  {{conn.targetName}}
+                </button>
+              </div>
+              <div class="bfm-flows">
+                <div *ngFor="let f of conn.flows" class="bfm-flow"
+                     (click)="inspectFlow(f)" title="Inspect flow">
+                  <span class="bfm-dot" [style.color]="critColor(f.criticality)">●</span>
+                  <span class="bfm-ie">
+                    {{f.information_entity.length ? f.information_entity.join(' · ') : '—'}}
+                  </span>
+                  <span class="bfm-crit" [style.color]="critColor(f.criticality)">{{f.criticality}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Flow diagram: upstream → core → downstream -->
         <div class="diagram">
 
@@ -167,7 +192,7 @@
             <div class="col-hdr up">
               <span class="col-icon">↓</span>
               UPSTREAM
-              <span class="col-ct">{{filteredUpstreamList(fp).length}}<ng-container *ngIf="upSearch().trim() || bpFlowFilter()">/{{upstreamList(fp).length}}</ng-container></span>
+              <span class="col-ct">{{filteredUpstreamList(fp).length}}<ng-container *ngIf="upSearch().trim()">/{{upstreamList(fp).length}}</ng-container></span>
             </div>
             <div class="col-sub">what this depends on</div>
             <div class="dep-search" *ngIf="upstreamList(fp).length > 0"
@@ -220,7 +245,7 @@
                 </span>
               </div>
               <div class="sc-flows">
-                <div *ngFor="let f of bpFlows(node); trackBy: trackViaFlow" class="sc-flow sc-flow-click"
+                <div *ngFor="let f of node.via_flows; trackBy: trackViaFlow" class="sc-flow sc-flow-click"
                      [class.sc-flow-match]="upSearch().trim() && isFlowMatch(f, upSearch(), upMode())"
                      (click)="selectViaFlow(f, node.id); $event.stopPropagation()"
                      title="Inspect this flow">
@@ -258,7 +283,7 @@
             <div class="col-hdr dn">
               <span class="col-icon">↓</span>
               DOWNSTREAM
-              <span class="col-ct">{{filteredDownstreamList(fp).length}}<ng-container *ngIf="dnSearch().trim() || bpFlowFilter()">/{{downstreamList(fp).length}}</ng-container></span>
+              <span class="col-ct">{{filteredDownstreamList(fp).length}}<ng-container *ngIf="dnSearch().trim()">/{{downstreamList(fp).length}}</ng-container></span>
             </div>
             <div class="col-sub">what this feeds into</div>
             <div class="dep-search" *ngIf="downstreamList(fp).length > 0"
@@ -311,7 +336,7 @@
                 </span>
               </div>
               <div class="sc-flows">
-                <div *ngFor="let f of bpFlows(node); trackBy: trackViaFlow" class="sc-flow sc-flow-click"
+                <div *ngFor="let f of node.via_flows; trackBy: trackViaFlow" class="sc-flow sc-flow-click"
                      [class.sc-flow-match]="dnSearch().trim() && isFlowMatch(f, dnSearch(), dnMode())"
                      (click)="selectViaFlow(f, node.id); $event.stopPropagation()"
                      title="Inspect this flow">

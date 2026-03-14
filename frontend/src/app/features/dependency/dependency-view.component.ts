@@ -11,7 +11,7 @@ import { DependencyService }         from '../../core/services/dependency.servic
 import { GraphService }              from '../../core/services/graph.service';
 import {
   Footprint, FootprintNode, AffectedProcess, DependencyResponse,
-  ViaFlow, SimNode, ds, SEVERITY_COLOR,
+  Flow, ViaFlow, SimNode, ds, SEVERITY_COLOR,
 } from '../../core/models/models';
 
 /** Distinct accent colours cycled across BP chips — each BP gets a unique hue. */
@@ -68,9 +68,6 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upSemLoading = signal(false);
   dnSemLoading = signal(false);
 
-  /** BP-flows-only filter — when on, cards show only flows tagged with the resolved BP,
-   *  and systems with zero matching flows are hidden from the list. */
-  bpFlowFilter   = signal(false);
   /** Resolved entity type from the latest analysis result. */
   currentResType = signal<'system' | 'business_process' | null>(null);
   /** Resolved BP name — set only when resolved_type === 'business_process'. */
@@ -163,29 +160,9 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   private _clearSemantic() {
     this.upSemIds.set(null); this.upSemLoading.set(false);
     this.dnSemIds.set(null); this.dnSemLoading.set(false);
-    this.bpFlowFilter.set(false);
-  }
-
-  // ── BP-flow filter helpers ───────────────────────────────────────────────────
-
-  /** Returns the active BP name when the BP-flows-only filter is on, null otherwise. */
-  private _activeBp(): string | null {
-    return (this.bpFlowFilter() && this.currentResType() === 'business_process')
-      ? this.currentBpName() : null;
-  }
-
-  /** The via_flows of `node` filtered to this BP only (or all flows when filter is off). */
-  bpFlows(node: FootprintNode): ViaFlow[] {
-    const bp = this._activeBp();
-    if (!bp) return node.via_flows;
-    return node.via_flows.filter(f =>
-      Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp,
-    );
   }
 
   trackViaFlow(_: number, f: ViaFlow): string { return f.flow_id; }
-
-  toggleBpFlowFilter() { this.bpFlowFilter.update(v => !v); }
 
   // ── Search input handlers ────────────────────────────────────────────────────
 
@@ -271,14 +248,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   filteredUpstreamList(fp: Footprint): FootprintNode[] {
-    // Step 1: BP filter — hide systems with no flows tagged to this BP
-    const bp = this._activeBp();
-    let base = bp
-      ? this.upstreamList(fp).filter(n => n.via_flows.some(f =>
-          Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp))
-      : this.upstreamList(fp);
-
-    // Step 2: search filter
+    const base = this.upstreamList(fp);
     const q = this.upSearch().trim().toLowerCase();
     if (!q) return base;
     const mode = this.upMode();
@@ -296,14 +266,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   filteredDownstreamList(fp: Footprint): FootprintNode[] {
-    // Step 1: BP filter
-    const bp = this._activeBp();
-    let base = bp
-      ? this.downstreamList(fp).filter(n => n.via_flows.some(f =>
-          Array.isArray(f.business_process) ? f.business_process.includes(bp) : (f.business_process as any) === bp))
-      : this.downstreamList(fp);
-
-    // Step 2: search filter
+    const base = this.downstreamList(fp);
     const q = this.dnSearch().trim().toLowerCase();
     if (!q) return base;
     const mode = this.dnMode();
@@ -324,17 +287,14 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upScorePct(node: FootprintNode): number {
     const q = this.upSearch().trim().toLowerCase();
     if (!q || this.upMode() === 'semantic') return 0;
-    // Score against BP-filtered flows when filter is active
-    const n = this._activeBp() ? { ...node, via_flows: this.bpFlows(node) } : node;
-    return Math.round(this._scoreNode(n, q, this.upMode() as 'exact' | 'similar') * 100);
+    return Math.round(this._scoreNode(node, q, this.upMode() as 'exact' | 'similar') * 100);
   }
 
   /** Score for a downstream card — 0-100 int. */
   dnScorePct(node: FootprintNode): number {
     const q = this.dnSearch().trim().toLowerCase();
     if (!q || this.dnMode() === 'semantic') return 0;
-    const n = this._activeBp() ? { ...node, via_flows: this.bpFlows(node) } : node;
-    return Math.round(this._scoreNode(n, q, this.dnMode() as 'exact' | 'similar') * 100);
+    return Math.round(this._scoreNode(node, q, this.dnMode() as 'exact' | 'similar') * 100);
   }
 
   /** Colour for the score badge: green ≥70 · amber ≥40 · red <40 */
@@ -427,18 +387,67 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   }
 
   /** Count of via_flows that match the search — shown as a badge on the card.
-   *  Uses BP-filtered flows when filter is active.
    *  Returns 0 in semantic mode (system-level filter only, no per-flow highlighting). */
   upFlowMatchCount(node: FootprintNode): number {
     const q = this.upSearch().trim();
     if (!q || this.upMode() === 'semantic') return 0;
-    return this.bpFlows(node).filter(f => this.isFlowMatch(f, q, this.upMode())).length;
+    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.upMode())).length;
   }
 
   dnFlowMatchCount(node: FootprintNode): number {
     const q = this.dnSearch().trim();
     if (!q || this.dnMode() === 'semantic') return 0;
-    return this.bpFlows(node).filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
+    return node.via_flows.filter(f => this.isFlowMatch(f, q, this.dnMode())).length;
+  }
+
+  // ── BP Internal Flows ────────────────────────────────────────────────────────
+
+  /**
+   * Returns BP-specific flows grouped by source→target system pair.
+   * Filters `fp.edges` by the resolved BP name, groups them, and sorts by criticality.
+   * Only populated when the resolved entity is a business_process.
+   */
+  bpInternalFlows(fp: Footprint): { sourceId: string; sourceName: string; targetId: string; targetName: string; flows: Flow[] }[] {
+    const bpName = this.currentBpName();
+    if (!bpName || !fp.edges?.length) return [];
+    const nameMap = new Map(fp.nodes.map(n => [n.id, n.name]));
+    const tagged = fp.edges.filter(e =>
+      Array.isArray(e.business_process) ? e.business_process.includes(bpName) : (e.business_process as any) === bpName,
+    );
+    const map = new Map<string, { sourceId: string; sourceName: string; targetId: string; targetName: string; flows: Flow[] }>();
+    const W: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+    tagged.forEach(e => {
+      const key = `${e.source_app}→${e.sinc_app}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          sourceId:   e.source_app,
+          sourceName: nameMap.get(e.source_app) ?? e.source_app,
+          targetId:   e.sinc_app,
+          targetName: nameMap.get(e.sinc_app) ?? e.sinc_app,
+          flows: [],
+        });
+      }
+      map.get(key)!.flows.push(e);
+    });
+    map.forEach(conn => conn.flows.sort((a, b) => (W[b.criticality] ?? 0) - (W[a.criticality] ?? 0)));
+    return Array.from(map.values());
+  }
+
+  trackBpConn(_: number, c: { sourceId: string; targetId: string }): string { return `${c.sourceId}→${c.targetId}`; }
+
+  /** Click a flow in the BP Internal Flows section → open inspector for that flow. */
+  inspectFlow(f: Flow) {
+    this._ensureSubgraph(f.source_app).subscribe(sg => {
+      const flow = sg.edges.find(e => e.id === f.id);
+      if (!flow) return;
+      const sourceNode = sg.nodes.find(n => n.id === flow.source_app) as SimNode | undefined;
+      const targetNode = sg.nodes.find(n => n.id === flow.sinc_app) as SimNode | undefined;
+      this.gs.selectEdge({
+        ...flow,
+        source: flow.source_app, target: flow.sinc_app,
+        sourceNode, targetNode,
+      });
+    });
   }
 
   /** Scroll the BP chip strip by a fixed amount. */
