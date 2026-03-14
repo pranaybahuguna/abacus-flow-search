@@ -643,9 +643,17 @@ def get_dependencies(
     if not q:
         raise HTTPException(400, "Either 'q' or 'entity_id'+'entity_type' must be provided")
 
-    # Try system first, then business process
-    r_sys = _vsearch.search(q, entity_type="system", top_k=1)
-    r_bp  = _vsearch.search(q, entity_type="business_process", top_k=1)
+    # Search by entity type — if a filter is specified, only search that type;
+    # otherwise search both with higher top_k for richer candidate lists.
+    if entity_type == "system":
+        r_sys = _vsearch.search(q, entity_type="system",           top_k=12)
+        r_bp  = None
+    elif entity_type == "business_process":
+        r_sys = None
+        r_bp  = _vsearch.search(q, entity_type="business_process", top_k=12)
+    else:
+        r_sys = _vsearch.search(q, entity_type="system",           top_k=8)
+        r_bp  = _vsearch.search(q, entity_type="business_process", top_k=8)
 
     # Pick whichever resolved with higher confidence
     resolved_type  = None
@@ -653,26 +661,26 @@ def get_dependencies(
     resolved_name  = None
     resolved_score = 0.0
 
-    if r_sys.resolved and r_sys.resolved.score > resolved_score:
+    if r_sys and r_sys.resolved and r_sys.resolved.score > resolved_score:
         resolved_type  = "system"
         resolved_id    = r_sys.resolved.entity_id
         resolved_name  = r_sys.resolved.name
         resolved_score = r_sys.resolved.score
 
-    if r_bp.resolved and r_bp.resolved.score > resolved_score:
+    if r_bp and r_bp.resolved and r_bp.resolved.score > resolved_score:
         resolved_type  = "business_process"
         resolved_id    = r_bp.resolved.entity_id
         resolved_name  = r_bp.resolved.name
         resolved_score = r_bp.resolved.score
 
     if not resolved_id or resolved_score < 0.65:
-        # Neither resolved confidently — return candidates from both
-        all_candidates = (r_sys.candidates or []) + (r_bp.candidates or [])
+        # Neither resolved confidently — return all candidates from searched types
+        all_candidates = (r_sys.candidates if r_sys else []) + (r_bp.candidates if r_bp else [])
         all_candidates.sort(key=lambda c: -c.score)
         return {
             "resolution": "AMBIGUOUS",
             "message":    f"Could not confidently resolve '{q}'. Pick from candidates.",
-            "candidates": [vars(c) for c in all_candidates[:8]],
+            "candidates": [vars(c) for c in all_candidates[:15]],
             "footprint":  None,
         }
 

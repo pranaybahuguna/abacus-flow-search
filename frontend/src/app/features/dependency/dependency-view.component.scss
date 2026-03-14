@@ -48,15 +48,37 @@ input::placeholder{color:#80a4c0}
 .ring{width:28px;height:28px;border:2px solid #2a5070;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
 .loading{flex-direction:row;color:#b0c6dc;font-size:11px}
 
+/* ── Entity type filter pills (in left panel) ──────────────────────────────── */
+.etype-filter{display:flex;align-items:center;gap:4px;margin-bottom:7px}
+.etf-lbl{font-size:7px;letter-spacing:.12em;color:#3a5070;flex-shrink:0;margin-right:2px}
+.etf-btn{
+  flex:1;padding:4px 0;border-radius:5px;
+  border:1px solid #2a4060;background:transparent;
+  color:#6080a0;font-size:8px;font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.06em;cursor:pointer;transition:all .15s;
+}
+.etf-btn:hover:not(.active){border-color:#3b82f6;color:#60a5fa}
+.etf-all.active {border-color:#4070b0;color:#93c5fd;background:rgba(59,130,246,.1)}
+.etf-proc.active{border-color:#a855f7;color:#c084fc;background:rgba(168,85,247,.1)}
+.etf-sys.active {border-color:#34d399;color:#6ee7b7;background:rgba(52,211,153,.1)}
+
 /* Ambiguous */
 .ambi{padding:18px;border-radius:10px;background:#0e1428;border:1px solid #2a5070;flex-shrink:0}
 .ambi-h{font-size:11px;color:#60a5fa;margin-bottom:8px}
-.ambi-m{font-size:10px;color:#b0c6dc;margin-bottom:12px;line-height:1.5}
-.cands{display:flex;flex-direction:column;gap:5px}
-.cand{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid #2a5070;background:transparent;color:#b0c6dc;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all .15s}
+.ambi-m{font-size:10px;color:#b0c6dc;margin-bottom:8px;line-height:1.5}
+.ambi-hint{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ambi-hint span:first-child{font-size:8px;color:#8ab0d0}
+.ambi-tip{font-size:7.5px;color:#3a5070;font-style:italic}
+.cands{display:flex;flex-direction:column;gap:5px;max-height:420px;overflow-y:auto;padding-right:2px}
+.cands::-webkit-scrollbar{width:3px}
+.cands::-webkit-scrollbar-thumb{background:#2a5070;border-radius:2px}
+.cand{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid #2a5070;background:transparent;color:#b0c6dc;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all .15s;text-align:left;width:100%}
 .cand:hover{border-color:#3b82f6;color:#aecfff}
-.ct{font-size:8px;color:#60a5fa;flex:1;text-align:center;text-transform:uppercase}
-.cs{color:#3b82f6}
+.cand-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px}
+.ct{font-size:7px;padding:1px 5px;border-radius:4px;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+.ct-bp{color:#c084fc;border:1px solid #7c3aed;background:rgba(124,58,237,.1)}
+.ct-sys{color:#6ee7b7;border:1px solid #059669;background:rgba(5,150,105,.1)}
+.cs{color:#3b82f6;font-size:8.5px;flex-shrink:0}
 
 /* Header row */
 .hdr-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0c1626;border:1px solid #2a5070;border-radius:9px;flex-shrink:0}

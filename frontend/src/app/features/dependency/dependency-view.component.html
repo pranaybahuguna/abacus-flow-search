@@ -8,9 +8,20 @@
       <div class="sub">upstream + downstream in one view</div>
       <div class="box">
         <input [ngModel]="query()" (ngModelChange)="query.set($event)"
-               (keydown.enter)="run()" placeholder="Search processes, flows &amp; systems…"
+               (keydown.enter)="run()"
+               [placeholder]="entityFilter()==='system' ? 'Search systems…' : entityFilter()==='business_process' ? 'Search business processes…' : 'Search processes or systems…'"
                autocomplete="off" spellcheck="false"/>
         <div class="spin" *ngIf="loading$ | async"></div>
+      </div>
+      <!-- Entity type filter -->
+      <div class="etype-filter">
+        <span class="etf-lbl">TYPE</span>
+        <button class="etf-btn etf-all"  [class.active]="entityFilter()==='all'"
+                (click)="entityFilter.set('all')" title="Search both systems and processes">ALL</button>
+        <button class="etf-btn etf-proc" [class.active]="entityFilter()==='business_process'"
+                (click)="entityFilter.set('business_process')" title="Search business processes only">PROCESS</button>
+        <button class="etf-btn etf-sys"  [class.active]="entityFilter()==='system'"
+                (click)="entityFilter.set('system')" title="Search systems only">SYSTEM</button>
       </div>
       <button class="btn-run" (click)="run()"
               [disabled]="!!(loading$ | async) || !query().trim()">
@@ -87,11 +98,18 @@
     <div class="ambi" *ngIf="(result$ | async)?.resolution === 'AMBIGUOUS'">
       <div class="ambi-h">⬡ DISAMBIGUATION NEEDED</div>
       <div class="ambi-m">{{(result$ | async)?.message}}</div>
+      <div class="ambi-hint">
+        <span>{{(result$ | async)?.candidates?.length}} candidates — click to select</span>
+        <span class="ambi-tip">narrow results using TYPE filter on the left</span>
+      </div>
       <div class="cands">
         <button *ngFor="let c of (result$ | async)?.candidates"
                 class="cand" (click)="pick(c)">
-          <span>{{c.name}}</span>
-          <span class="ct">{{c.entity_type.replace('_',' ')}}</span>
+          <span class="cand-name">{{c.name}}</span>
+          <span class="ct" [class.ct-bp]="c.entity_type==='business_process'"
+                           [class.ct-sys]="c.entity_type==='system'">
+            {{c.entity_type === 'business_process' ? 'PROCESS' : 'SYSTEM'}}
+          </span>
           <span class="cs">{{(c.score*100).toFixed(0)}}%</span>
         </button>
       </div>

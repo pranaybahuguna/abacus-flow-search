@@ -58,6 +58,9 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
   upSearch = signal('');
   dnSearch = signal('');
 
+  /** Entity type filter for text searches: all = both, system = systems only, business_process = processes only */
+  entityFilter = signal<'all' | 'system' | 'business_process'>('all');
+
   /** Search mode: exact = substring phrase match, similar = token fuzzy match, semantic = API semantic search */
   upMode = signal<'exact'|'similar'|'semantic'>('exact');
   dnMode = signal<'exact'|'similar'|'semantic'>('exact');
@@ -150,7 +153,7 @@ export class DependencyViewComponent implements OnInit, OnDestroy {
     this.dnSearch.set('');
     this.bpFlowSearch.set('');
     this._clearSemantic();
-    this.ds.analyse(query, this.maxHops()).subscribe();
+    this.ds.analyse(query, this.maxHops(), undefined, undefined, this.entityFilter()).subscribe();
   }
 
   pick(c: { entity_id: string; entity_type: string; name: string }) {

@@ -15,7 +15,11 @@ export class DependencyService {
   readonly result$  = this._r.asObservable();
   readonly loading$ = this._l.asObservable();
 
-  analyse(query: string, maxHops = 3, entityId?: string, entityType?: string) {
+  /**
+   * @param filterType  Optional entity type filter for text searches ('system' | 'business_process').
+   *                    Ignored when entityId+entityType are provided (direct picks always use those).
+   */
+  analyse(query: string, maxHops = 3, entityId?: string, entityType?: string, filterType?: string) {
     this._l.next(true);
     this._r.next(null);
     let p = new HttpParams().set('max_hops', maxHops);
@@ -23,6 +27,7 @@ export class DependencyService {
       p = p.set('entity_id', entityId).set('entity_type', entityType);
     } else {
       p = p.set('q', query);
+      if (filterType && filterType !== 'all') p = p.set('entity_type', filterType);
     }
     return this.http.get<DependencyResponse>('/api/dependencies', { params: p }).pipe(
       tap(r  => { this._r.next(r); this._l.next(false); }),
